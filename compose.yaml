@@ -1,0 +1,99 @@
+# Docker Compose สำหรับ ECC800 Data Center Monitoring System
+version: '3.8'
+
+services:
+  # Backend Service (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ecc800-backend
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - BACKEND_PORT=8010
+      # Override database host for container network
+      - POSTGRES_HOST=host.docker.internal
+    networks:
+      - ecc800-network
+    volumes:
+      - ./backend:/app
+      - /etc/localtime:/etc/localtime:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Frontend Service (React + Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE=/ecc800/api
+        - VITE_BASE_URL=/ecc800
+    container_name: ecc800-frontend
+    expose:
+      - "80"
+    networks:
+      - ecc800-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Reverse Proxy Service (Nginx) 
+  reverse-proxy:
+    build:
+      context: ./reverse-proxy
+      dockerfile: Dockerfile
+    container_name: ecc800-nginx
+    ports:
+      - "8081:80"   # HTTP port for health checks and redirects
+      - "3344:443"  # HTTPS port for main application
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - ecc800-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "localhost:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://127.0.0.1:443/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
+# Networks
+networks:
+  ecc800-network:
+    name: ecc800-network
+    driver: bridge

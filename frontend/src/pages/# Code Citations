@@ -1,0 +1,25 @@
+# Code Citations
+
+## License: unknown
+https://github.com/chluebi/5eCollector/blob/1af9270789001bdb46f4b3f9e6dad9df1c3c0f9c/lib/database.py
+
+```
+host=config['database']['host'],
+    port=config['database']['port'],
+    database=config['database']['database'],
+    user=config['database']['user'],
+    password=config['database']
+```
+
+
+## License: unknown
+https://github.com/chluebi/5eCollector/blob/1af9270789001bdb46f4b3f9e6dad9df1c3c0f9c/lib/database.py
+
+```
+host=config['database']['host'],
+    port=config['database']['port'],
+    database=config['database']['database'],
+    user=config['database']['user'],
+    password=config['database']
+```
+

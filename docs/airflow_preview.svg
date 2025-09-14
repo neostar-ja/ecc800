@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="600" viewBox="0 0 1400 600">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <pattern id="grid" width="25" height="25" patternUnits="userSpaceOnUse">
+      <path d="M25 0 L0 0 0 25" fill="none" stroke="#cbd5e1" stroke-width="0.5" opacity="0.4"/>
+    </pattern>
+    <linearGradient id="coldZone" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e0f2fe" stop-opacity="0.55" />
+      <stop offset="50%" stop-color="#0ea5e9" stop-opacity="0.28" />
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.18" />
+    </linearGradient>
+    <linearGradient id="hotZone" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef2f2" stop-opacity="0.6" />
+      <stop offset="50%" stop-color="#ef4444" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#dc2626" stop-opacity="0.2" />
+    </linearGradient>
+    <filter id="glowBlue" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowRed" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="r"/>
+      <feMerge><feMergeNode in="r"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="1400" height="600" fill="url(#bgGrad)"/>
+  <rect x="0" y="0" width="1400" height="600" fill="url(#grid)"/>
+
+  <!-- Hot exhaust zones (outside, behind racks) -->
+  <rect x="40" y="25" width="1320" height="30" rx="10" fill="url(#hotZone)" stroke="#dc2626" stroke-width="3"/>
+  <text x="700" y="17" text-anchor="middle" font-size="14" fill="#dc2626" font-family="sans-serif" font-weight="600">HOT EXHAUST (35°C)</text>
+
+  <rect x="40" y="545" width="1320" height="30" rx="10" fill="url(#hotZone)" stroke="#dc2626" stroke-width="3"/>
+  <text x="700" y="540" text-anchor="middle" font-size="14" fill="#dc2626" font-family="sans-serif" font-weight="600">HOT EXHAUST (35°C)</text>
+
+  <!-- Cold aisle (only center between rows) -->
+  <rect x="40" y="190" width="1320" height="150" rx="18" fill="url(#coldZone)" stroke="#0ea5e9" stroke-width="6"/>
+  <text x="700" y="270" text-anchor="middle" font-size="18" fill="#0369a1" font-family="sans-serif" font-weight="700">COLD AISLE (18°C)</text>
+
+  <!-- Racks (front row A at y=120, back row B at y=420) -->
+  <!-- 8 columns aligned with center aisle -->
+  <g id="racks" fill="#475569" stroke="#ffffff" stroke-width="2">
+    <!-- Row A (front) -->
+    <g id="rowA">
+      <g transform="translate(60,120)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(230,120)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(400,120)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(570,120)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(740,120)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(910,120)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(1080,120)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(1250,120)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+    </g>
+    <!-- Row B (back) -->
+    <g id="rowB">
+      <g transform="translate(60,420)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(230,420)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(400,420)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(570,420)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(740,420)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(910,420)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(1080,420)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+      <g transform="translate(1250,420)"><rect width="125" height="100" rx="12" fill="#475569"/></g>
+    </g>
+  </g>
+
+  <!-- Cold airflow from center into rack fronts (simplified bezier, no arrowheads) -->
+  <g stroke="#38bdf8" stroke-width="6" fill="none" filter="url(#glowBlue)" opacity="0.85">
+    <!-- Map a few representative racks to show flow -->
+    <path d="M 122 265 Q 122 240 122 190" />
+    <path d="M 292 265 Q 292 240 292 190" />
+    <path d="M 462 265 Q 462 240 462 190" />
+    <path d="M 632 265 Q 632 240 632 190" />
+    <path d="M 802 265 Q 802 240 802 190" />
+    <path d="M 972 265 Q 972 240 972 190" />
+    <path d="M 1142 265 Q 1142 240 1142 190" />
+    <path d="M 1312 265 Q 1312 240 1312 190" />
+
+    <path d="M 122 285 Q 122 310 122 420" />
+    <path d="M 292 285 Q 292 310 292 420" />
+    <path d="M 462 285 Q 462 310 462 420" />
+    <path d="M 632 285 Q 632 310 632 420" />
+    <path d="M 802 285 Q 802 310 802 420" />
+    <path d="M 972 285 Q 972 310 972 420" />
+    <path d="M 1142 285 Q 1142 310 1142 420" />
+    <path d="M 1312 285 Q 1312 310 1312 420" />
+  </g>
+
+  <!-- Hot airflow from racks to outer exhaust (top for row A, bottom for row B) -->
+  <g stroke="#ef4444" stroke-width="5" fill="none" filter="url(#glowRed)" opacity="0.9">
+    <!-- Row A (upward to top exhaust) -->
+    <path d="M 122 200 Q 122 110 122 40" />
+    <path d="M 292 200 Q 292 110 292 40" />
+    <path d="M 462 200 Q 462 110 462 40" />
+    <path d="M 632 200 Q 632 110 632 40" />
+    <path d="M 802 200 Q 802 110 802 40" />
+    <path d="M 972 200 Q 972 110 972 40" />
+    <path d="M 1142 200 Q 1142 110 1142 40" />
+    <path d="M 1312 200 Q 1312 110 1312 40" />
+    <!-- Row B (downward to bottom exhaust) -->
+    <path d="M 122 440 Q 122 520 122 560" />
+    <path d="M 292 440 Q 292 520 292 560" />
+    <path d="M 462 440 Q 462 520 462 560" />
+    <path d="M 632 440 Q 632 520 632 560" />
+    <path d="M 802 440 Q 802 520 802 560" />
+    <path d="M 972 440 Q 972 520 972 560" />
+    <path d="M 1142 440 Q 1142 520 1142 560" />
+    <path d="M 1312 440 Q 1312 520 1312 560" />
+  </g>
+
+  <!-- AC units (example) blowing into center aisle -->
+  <g>
+    <rect x="570" y="120" width="125" height="100" rx="12" fill="#059669" stroke="#ffffff" stroke-width="2"/>
+    <rect x="910" y="420" width="125" height="100" rx="12" fill="#059669" stroke="#ffffff" stroke-width="2"/>
+    <!-- Cool waves into center -->
+    <g stroke="#0ea5e9" stroke-width="4" fill="none" opacity="0.8" filter="url(#glowBlue)">
+      <path d="M 632 220 Q 632 250 632 270" />
+      <path d="M 972 470 Q 972 440 972 420" />
+    </g>
+  </g>
+
+  <!-- Legend -->
+  <g font-family="sans-serif" font-size="14" fill="#0f172a">
+    <rect x="1040" y="70" width="300" height="95" rx="10" fill="#ffffff" stroke="#cbd5e1" />
+    <circle cx="1060" cy="95" r="6" fill="#38bdf8" />
+    <text x="1076" y="100">Cold airflow into racks (from center aisle)</text>
+    <circle cx="1060" cy="125" r="6" fill="#ef4444" />
+    <text x="1076" y="130">Hot airflow to outer exhaust zones</text>
+  </g>
+</svg>
+

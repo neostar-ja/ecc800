@@ -1,0 +1,164 @@
+"""
+ECC800 Data Center Monitoring System - Main Application
+แอปพลิเคชันหลักสำหรับระบบติดตามศูนย์ข้อมูล ECC800
+"""
+import os
+import uvicorn
+from contextlib import asynccontextmanager
+from datetime import datetime
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
+from app.core.config import get_settings
+from app.db.session import engine
+from app.routers.auth import router as auth_router
+from app.api.routes.sites import router as sites_router
+from app.api.routes.reports import router as reports_router
+from app.api.routes.admin import router as admin_router
+from app.api.routes.analytics import router as analytics_router
+from app.api.routes.metrics import router as metrics_router
+from app.api.routes.users import router as users_router
+
+# Import Enhanced Metrics Routers
+from app.routers.enhanced_metrics import router as enhanced_metrics_router
+from app.routers.enhanced_faults import router as enhanced_faults_router
+from app.routers.simple_enhanced_metrics import router as simple_enhanced_metrics_router
+from app.routers.dashboard import router as dashboard_router
+
+# Get settings instance
+settings = get_settings()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan management - จัดการ lifecycle ของแอป"""
+    try:
+        # Test database connection on startup
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+        print("✓ Database connection established")
+        yield
+    except Exception as e:
+        print(f"Startup error: {e}")
+        yield
+    finally:
+        # Cleanup on shutdown
+        try:
+            await engine.dispose()
+            print("✓ Database connections closed")
+        except Exception as e:
+            print(f"Shutdown error: {e}")
+
+# Create FastAPI application - สร้างแอปพลิเคชัน FastAPI
+app = FastAPI(
+    title="ECC800 Data Center Monitoring System",
+    description="ระบบติดตามและจัดการศูนย์ข้อมูล ECC800 โรงพยาบาล",
+    version="2.0.0",
+    docs_url=f"{settings.APP_BASE_PATH}/docs",
+    redoc_url=f"{settings.APP_BASE_PATH}/redoc",
+    openapi_url=f"{settings.API_PREFIX}/openapi.json",
+    lifespan=lifespan
+)
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins + ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include all routers with API prefix
+app.include_router(auth_router, prefix=settings.API_PREFIX)
+print(f"✅ Auth router registered with {len(auth_router.routes)} routes")
+
+app.include_router(sites_router, prefix=settings.API_PREFIX)
+print(f"✅ Sites router registered with {len(sites_router.routes)} routes")
+
+app.include_router(reports_router, prefix=settings.API_PREFIX)
+# Include users router - รวม users router (duplicate mount for compatibility)
+app.include_router(users_router, prefix=settings.API_PREFIX)
+print(f"✅ Users router registered with {len(users_router.routes)} routes")
+
+# Include users router under /admin - รวม users router ภายใต้ /admin
+app.include_router(users_router, prefix=f"{settings.API_PREFIX}/admin")
+print(f"✅ Users router registered under /admin with {len(users_router.routes)} routes")
+print(f"✅ Reports router registered with {len(reports_router.routes)} routes")
+
+app.include_router(admin_router, prefix=settings.API_PREFIX)
+print(f"✅ Admin router registered with {len(admin_router.routes)} routes")
+
+app.include_router(analytics_router, prefix=settings.API_PREFIX)
+print(f"✅ Analytics router registered with {len(analytics_router.routes)} routes")
+
+app.include_router(metrics_router, prefix=settings.API_PREFIX)
+print(f"✅ Metrics router registered with {len(metrics_router.routes)} routes")
+
+# Include Enhanced Metrics Routers
+app.include_router(simple_enhanced_metrics_router, prefix=settings.API_PREFIX, tags=["Simple Enhanced Metrics"])
+print(f"✅ Simple Enhanced Metrics router registered with {len(simple_enhanced_metrics_router.routes)} routes")
+app.include_router(enhanced_faults_router, prefix=settings.API_PREFIX, tags=["Enhanced Faults"])
+print(f"✅ Enhanced Faults router registered with {len(enhanced_faults_router.routes)} routes")
+
+app.include_router(enhanced_metrics_router, prefix=settings.API_PREFIX, tags=["Enhanced Metrics"])
+print(f"✅ Enhanced Metrics router registered with {len(enhanced_metrics_router.routes)} routes")
+app.include_router(enhanced_faults_router, prefix=settings.API_PREFIX, tags=["Enhanced Faults"])
+print(f"✅ Enhanced Faults router registered with {len(enhanced_faults_router.routes)} routes")
+
+# Include Dashboard router
+app.include_router(dashboard_router, prefix=settings.API_PREFIX, tags=["Dashboard"])
+print(f"✅ Dashboard router registered with {len(dashboard_router.routes)} routes")
+
+print(f"✅ All routers registered successfully")
+print(f"✅ Total API routes registered: {len(app.routes)}")
+
+# Health and root endpoints
+@app.get("/")
+@app.get(f"{settings.APP_BASE_PATH}")
+async def root():
+    """Root endpoint - หน้าแรกของ API"""
+    return {
+        "message": "ยินดีต้อนรับสู่ระบบติดตาม ECC800 ศูนย์ข้อมูลโรงพยาบาล",
+        "version": "2.0.0",
+        "docs": f"{settings.PUBLIC_BASE_URL}/docs",
+        "health": f"{settings.PUBLIC_BASE_URL}/api/health",
+        "api": f"{settings.PUBLIC_BASE_URL}/api",
+        "database_connected": True
+    }
+
+@app.get("/health")
+@app.get(f"{settings.APP_BASE_PATH}/health")
+@app.get(f"{settings.API_PREFIX}/health")
+async def health_check():
+    """Health check endpoint - ตรวจสอบสถานะระบบ"""
+    try:
+        async with engine.begin() as conn:
+            result = await conn.execute(text("SELECT 1"))
+            db_status = "ok" if result.scalar() == 1 else "error"
+        
+        return {
+            "status": "ok",
+            "db": db_status,
+            "version": "2.0.0",
+            "timestamp": datetime.now().isoformat(),
+            "message": "ระบบ ECC800 พร้อมใช้งาน"
+        }
+    except Exception as e:
+        return {
+            "status": "error", 
+            "db": "error",
+            "error": str(e),
+            "version": "2.0.0",
+            "timestamp": datetime.now().isoformat(),
+            "message": "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล"
+        }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=int(os.getenv("BACKEND_PORT", 8000)),
+        reload=False
+    )

@@ -1,0 +1,841 @@
+{
+  "timestamp": "2025-08-28T17:59:48.895128",
+  "connection_info": {
+    "host": "10.251.150.222",
+    "port": 5210,
+    "database": "ecc800",
+    "username": "apirak"
+  },
+  "hypertables": [],
+  "dimensions": [
+    {
+      "hypertable_name": "_materialized_hypertable_22",
+      "column_name": "hour_bucket",
+      "dimension_type": "Time",
+      "time_interval": "70 days, 0:00:00"
+    },
+    {
+      "hypertable_name": "_materialized_hypertable_23",
+      "column_name": "day_bucket",
+      "dimension_type": "Time",
+      "time_interval": "70 days, 0:00:00"
+    },
+    {
+      "hypertable_name": "_materialized_hypertable_24",
+      "column_name": "hour_bucket",
+      "dimension_type": "Time",
+      "time_interval": "70 days, 0:00:00"
+    },
+    {
+      "hypertable_name": "_materialized_hypertable_25",
+      "column_name": "day_bucket",
+      "dimension_type": "Time",
+      "time_interval": "70 days, 0:00:00"
+    },
+    {
+      "hypertable_name": "fault_performance_data",
+      "column_name": "statistical_start_time",
+      "dimension_type": "Time",
+      "time_interval": "7 days, 0:00:00"
+    },
+    {
+      "hypertable_name": "performance_data",
+      "column_name": "statistical_start_time",
+      "dimension_type": "Time",
+      "time_interval": "7 days, 0:00:00"
+    }
+  ],
+  "database_objects": {
+    "tables": [
+      {
+        "table_schema": "_timescaledb_cache",
+        "table_name": "cache_inval_bgw_job",
+        "column_count": 0
+      },
+      {
+        "table_schema": "_timescaledb_cache",
+        "table_name": "cache_inval_extension",
+        "column_count": 0
+      },
+      {
+        "table_schema": "_timescaledb_cache",
+        "table_name": "cache_inval_hypertable",
+        "column_count": 0
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "chunk",
+        "column_count": 9
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "chunk_column_stats",
+        "column_count": 7
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "chunk_constraint",
+        "column_count": 4
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "chunk_index",
+        "column_count": 4
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "compression_algorithm",
+        "column_count": 4
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "compression_chunk_size",
+        "column_count": 11
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "compression_settings",
+        "column_count": 5
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "continuous_agg",
+        "column_count": 11
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "continuous_agg_migrate_plan",
+        "column_count": 4
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "continuous_agg_migrate_plan_step",
+        "column_count": 7
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "continuous_aggs_bucket_function",
+        "column_count": 7
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "continuous_aggs_hypertable_invalidation_log",
+        "column_count": 3
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "continuous_aggs_invalidation_threshold",
+        "column_count": 2
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "continuous_aggs_materialization_invalidation_log",
+        "column_count": 3
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "continuous_aggs_watermark",
+        "column_count": 2
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "dimension",
+        "column_count": 12
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "dimension_slice",
+        "column_count": 4
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "hypertable",
+        "column_count": 12
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "metadata",
+        "column_count": 3
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "tablespace",
+        "column_count": 3
+      },
+      {
+        "table_schema": "_timescaledb_catalog",
+        "table_name": "telemetry_event",
+        "column_count": 3
+      },
+      {
+        "table_schema": "_timescaledb_config",
+        "table_name": "bgw_job",
+        "column_count": 17
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_compressed_hypertable_6",
+        "column_count": 0
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_13_35_chunk",
+        "column_count": 16
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_13_36_chunk",
+        "column_count": 16
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_13_49_chunk",
+        "column_count": 16
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_22_45_chunk",
+        "column_count": 9
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_23_46_chunk",
+        "column_count": 9
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_24_47_chunk",
+        "column_count": 6
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_25_48_chunk",
+        "column_count": 6
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_5_11_chunk",
+        "column_count": 14
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_5_12_chunk",
+        "column_count": 14
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_5_13_chunk",
+        "column_count": 14
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_5_14_chunk",
+        "column_count": 14
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_5_15_chunk",
+        "column_count": 14
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_5_20_chunk",
+        "column_count": 14
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_5_22_chunk",
+        "column_count": 14
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_5_50_chunk",
+        "column_count": 14
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_hyper_5_51_chunk",
+        "column_count": 14
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_materialized_hypertable_22",
+        "column_count": 9
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_materialized_hypertable_23",
+        "column_count": 9
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_materialized_hypertable_24",
+        "column_count": 6
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "_materialized_hypertable_25",
+        "column_count": 6
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "bgw_job_stat",
+        "column_count": 15
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "bgw_job_stat_history",
+        "column_count": 7
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "table_name": "bgw_policy_chunk_stats",
+        "column_count": 4
+      },
+      {
+        "table_schema": "public",
+        "table_name": "data_centers",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "table_name": "data_import_logs",
+        "column_count": 20
+      },
+      {
+        "table_schema": "public",
+        "table_name": "device_display_override",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "table_name": "enhanced_export_actions",
+        "column_count": 10
+      },
+      {
+        "table_schema": "public",
+        "table_name": "enhanced_export_sessions",
+        "column_count": 23
+      },
+      {
+        "table_schema": "public",
+        "table_name": "enhanced_export_step_logs",
+        "column_count": 15
+      },
+      {
+        "table_schema": "public",
+        "table_name": "equipment",
+        "column_count": 8
+      },
+      {
+        "table_schema": "public",
+        "table_name": "equipment_aliases",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "table_name": "export_downloads",
+        "column_count": 11
+      },
+      {
+        "table_schema": "public",
+        "table_name": "export_interactions",
+        "column_count": 10
+      },
+      {
+        "table_schema": "public",
+        "table_name": "export_page_visits",
+        "column_count": 11
+      },
+      {
+        "table_schema": "public",
+        "table_name": "export_performance",
+        "column_count": 7
+      },
+      {
+        "table_schema": "public",
+        "table_name": "export_sessions",
+        "column_count": 17
+      },
+      {
+        "table_schema": "public",
+        "table_name": "export_step_logs",
+        "column_count": 12
+      },
+      {
+        "table_schema": "public",
+        "table_name": "export_web_log",
+        "column_count": 19
+      },
+      {
+        "table_schema": "public",
+        "table_name": "fault_data_import_logs",
+        "column_count": 16
+      },
+      {
+        "table_schema": "public",
+        "table_name": "fault_equipment_master",
+        "column_count": 7
+      },
+      {
+        "table_schema": "public",
+        "table_name": "fault_performance_data",
+        "column_count": 14
+      },
+      {
+        "table_schema": "public",
+        "table_name": "metric_aliases",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "table_name": "metric_display_override_device",
+        "column_count": 11
+      },
+      {
+        "table_schema": "public",
+        "table_name": "metric_display_override_site",
+        "column_count": 10
+      },
+      {
+        "table_schema": "public",
+        "table_name": "performance_data",
+        "column_count": 16
+      },
+      {
+        "table_schema": "public",
+        "table_name": "performance_data_2025_08",
+        "column_count": 10
+      },
+      {
+        "table_schema": "public",
+        "table_name": "performance_data_2025_09",
+        "column_count": 10
+      },
+      {
+        "table_schema": "public",
+        "table_name": "performance_data_2025_10",
+        "column_count": 10
+      },
+      {
+        "table_schema": "public",
+        "table_name": "performance_data_import_logs",
+        "column_count": 17
+      },
+      {
+        "table_schema": "public",
+        "table_name": "performance_data_old",
+        "column_count": 10
+      },
+      {
+        "table_schema": "public",
+        "table_name": "performance_equipment_master",
+        "column_count": 8
+      },
+      {
+        "table_schema": "public",
+        "table_name": "performance_metrics",
+        "column_count": 5
+      },
+      {
+        "table_schema": "public",
+        "table_name": "pipeline_performance_stats",
+        "column_count": 16
+      },
+      {
+        "table_schema": "public",
+        "table_name": "users",
+        "column_count": 8
+      }
+    ],
+    "views": [
+      {
+        "table_schema": "_timescaledb_internal",
+        "view_name": "_direct_view_22",
+        "column_count": 9
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "view_name": "_direct_view_23",
+        "column_count": 9
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "view_name": "_direct_view_24",
+        "column_count": 6
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "view_name": "_direct_view_25",
+        "column_count": 6
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "view_name": "_partial_view_22",
+        "column_count": 9
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "view_name": "_partial_view_23",
+        "column_count": 9
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "view_name": "_partial_view_24",
+        "column_count": 6
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "view_name": "_partial_view_25",
+        "column_count": 6
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "view_name": "compressed_chunk_stats",
+        "column_count": 13
+      },
+      {
+        "table_schema": "_timescaledb_internal",
+        "view_name": "hypertable_chunk_local_size",
+        "column_count": 14
+      },
+      {
+        "table_schema": "public",
+        "view_name": "cagg_fault_daily",
+        "column_count": 6
+      },
+      {
+        "table_schema": "public",
+        "view_name": "cagg_fault_hourly",
+        "column_count": 6
+      },
+      {
+        "table_schema": "public",
+        "view_name": "cagg_perf_1h_to_1d",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "view_name": "cagg_perf_5m_to_1h",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "view_name": "export_session_overview",
+        "column_count": 14
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_datacenter_stats",
+        "column_count": 6
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_devices_by_site",
+        "column_count": 10
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_equipment_classification",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_equipment_latest_status",
+        "column_count": 8
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_equipment_resolved",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_equipment_summary",
+        "column_count": 8
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_export_session_summary",
+        "column_count": 13
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_fault_import_statistics",
+        "column_count": 8
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_fault_performance_summary",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_import_statistics",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_latest_performance_data",
+        "column_count": 8
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_metric_resolved",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_metrics_by_device",
+        "column_count": 13
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_performance_import_statistics",
+        "column_count": 10
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_performance_summary",
+        "column_count": 12
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_site_performance_comparison",
+        "column_count": 9
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_sites_summary",
+        "column_count": 5
+      },
+      {
+        "table_schema": "public",
+        "view_name": "v_timeseries_data",
+        "column_count": 15
+      }
+    ],
+    "materialized_views": []
+  },
+  "equipment_override_table": {
+    "exists": false,
+    "record_count": 0
+  },
+  "data_analysis": {
+    "performance_related": [
+      {
+        "table_name": "_pg_foreign_data_wrappers",
+        "table_schema": "information_schema"
+      },
+      {
+        "table_name": "data_centers",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "data_import_logs",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "data_type_privileges",
+        "table_schema": "information_schema"
+      },
+      {
+        "table_name": "export_performance",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "fault_data_import_logs",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "fault_performance_data",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "foreign_data_wrapper_options",
+        "table_schema": "information_schema"
+      },
+      {
+        "table_name": "foreign_data_wrappers",
+        "table_schema": "information_schema"
+      },
+      {
+        "table_name": "metadata",
+        "table_schema": "_timescaledb_catalog"
+      },
+      {
+        "table_name": "metric_aliases",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "metric_display_override_device",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "metric_display_override_site",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "performance_data",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "performance_data_2025_08",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "performance_data_2025_09",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "performance_data_2025_10",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "performance_data_import_logs",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "performance_data_old",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "performance_equipment_master",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "performance_metrics",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "pg_database",
+        "table_schema": "pg_catalog"
+      },
+      {
+        "table_name": "pg_foreign_data_wrapper",
+        "table_schema": "pg_catalog"
+      },
+      {
+        "table_name": "pg_largeobject_metadata",
+        "table_schema": "pg_catalog"
+      },
+      {
+        "table_name": "pg_stat_database",
+        "table_schema": "pg_catalog"
+      },
+      {
+        "table_name": "pg_stat_database_conflicts",
+        "table_schema": "pg_catalog"
+      },
+      {
+        "table_name": "pg_statistic_ext_data",
+        "table_schema": "pg_catalog"
+      },
+      {
+        "table_name": "pipeline_performance_stats",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_datacenter_stats",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_fault_performance_summary",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_latest_performance_data",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_metric_resolved",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_metrics_by_device",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_performance_import_statistics",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_performance_summary",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_site_performance_comparison",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_timeseries_data",
+        "table_schema": "public"
+      }
+    ],
+    "fault_related": [
+      {
+        "table_name": "cagg_fault_daily",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "cagg_fault_hourly",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "fault_data_import_logs",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "fault_equipment_master",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "fault_performance_data",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "pg_default_acl",
+        "table_schema": "pg_catalog"
+      },
+      {
+        "table_name": "v_fault_import_statistics",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_fault_performance_summary",
+        "table_schema": "public"
+      }
+    ],
+    "site_related": [
+      {
+        "table_name": "data_centers",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "metric_display_override_site",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "pg_shmem_allocations",
+        "table_schema": "pg_catalog"
+      },
+      {
+        "table_name": "v_datacenter_stats",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_devices_by_site",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_site_performance_comparison",
+        "table_schema": "public"
+      },
+      {
+        "table_name": "v_sites_summary",
+        "table_schema": "public"
+      }
+    ],
+    "sample_performance_data": []
+  }
+}

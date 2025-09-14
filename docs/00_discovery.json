@@ -1,0 +1,920 @@
+{
+  "timestamp": "2025-08-28T18:50:11.647805",
+  "database_info": {
+    "host": "10.251.150.222",
+    "port": "5210",
+    "database": "ecc800"
+  },
+  "hypertables": [
+    {
+      "schema": "public",
+      "name": "fault_performance_data",
+      "dimensions": 2,
+      "compression": true
+    },
+    {
+      "schema": "public",
+      "name": "performance_data",
+      "dimensions": 1,
+      "compression": false
+    }
+  ],
+  "dimensions": [
+    {
+      "hypertable": "fault_performance_data",
+      "column": "statistical_start_time",
+      "type": "Time",
+      "interval": "7 days, 0:00:00"
+    },
+    {
+      "hypertable": "performance_data",
+      "column": "statistical_start_time",
+      "type": "Time",
+      "interval": "7 days, 0:00:00"
+    },
+    {
+      "hypertable": "_materialized_hypertable_22",
+      "column": "hour_bucket",
+      "type": "Time",
+      "interval": "70 days, 0:00:00"
+    },
+    {
+      "hypertable": "_materialized_hypertable_23",
+      "column": "day_bucket",
+      "type": "Time",
+      "interval": "70 days, 0:00:00"
+    },
+    {
+      "hypertable": "_materialized_hypertable_24",
+      "column": "hour_bucket",
+      "type": "Time",
+      "interval": "70 days, 0:00:00"
+    },
+    {
+      "hypertable": "_materialized_hypertable_25",
+      "column": "day_bucket",
+      "type": "Time",
+      "interval": "70 days, 0:00:00"
+    }
+  ],
+  "tables": [
+    {
+      "schema": "_timescaledb_cache",
+      "name": "cache_inval_bgw_job",
+      "full_name": "_timescaledb_cache.cache_inval_bgw_job"
+    },
+    {
+      "schema": "_timescaledb_cache",
+      "name": "cache_inval_extension",
+      "full_name": "_timescaledb_cache.cache_inval_extension"
+    },
+    {
+      "schema": "_timescaledb_cache",
+      "name": "cache_inval_hypertable",
+      "full_name": "_timescaledb_cache.cache_inval_hypertable"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "chunk",
+      "full_name": "_timescaledb_catalog.chunk"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "chunk_column_stats",
+      "full_name": "_timescaledb_catalog.chunk_column_stats"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "chunk_constraint",
+      "full_name": "_timescaledb_catalog.chunk_constraint"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "chunk_index",
+      "full_name": "_timescaledb_catalog.chunk_index"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "compression_algorithm",
+      "full_name": "_timescaledb_catalog.compression_algorithm"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "compression_chunk_size",
+      "full_name": "_timescaledb_catalog.compression_chunk_size"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "compression_settings",
+      "full_name": "_timescaledb_catalog.compression_settings"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "continuous_agg",
+      "full_name": "_timescaledb_catalog.continuous_agg"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "continuous_agg_migrate_plan",
+      "full_name": "_timescaledb_catalog.continuous_agg_migrate_plan"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "continuous_agg_migrate_plan_step",
+      "full_name": "_timescaledb_catalog.continuous_agg_migrate_plan_step"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "continuous_aggs_bucket_function",
+      "full_name": "_timescaledb_catalog.continuous_aggs_bucket_function"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "continuous_aggs_hypertable_invalidation_log",
+      "full_name": "_timescaledb_catalog.continuous_aggs_hypertable_invalidation_log"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "continuous_aggs_invalidation_threshold",
+      "full_name": "_timescaledb_catalog.continuous_aggs_invalidation_threshold"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "continuous_aggs_materialization_invalidation_log",
+      "full_name": "_timescaledb_catalog.continuous_aggs_materialization_invalidation_log"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "continuous_aggs_watermark",
+      "full_name": "_timescaledb_catalog.continuous_aggs_watermark"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "dimension",
+      "full_name": "_timescaledb_catalog.dimension"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "dimension_slice",
+      "full_name": "_timescaledb_catalog.dimension_slice"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "hypertable",
+      "full_name": "_timescaledb_catalog.hypertable"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "metadata",
+      "full_name": "_timescaledb_catalog.metadata"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "tablespace",
+      "full_name": "_timescaledb_catalog.tablespace"
+    },
+    {
+      "schema": "_timescaledb_catalog",
+      "name": "telemetry_event",
+      "full_name": "_timescaledb_catalog.telemetry_event"
+    },
+    {
+      "schema": "_timescaledb_config",
+      "name": "bgw_job",
+      "full_name": "_timescaledb_config.bgw_job"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_compressed_hypertable_6",
+      "full_name": "_timescaledb_internal._compressed_hypertable_6"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_direct_view_22",
+      "full_name": "_timescaledb_internal._direct_view_22"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_direct_view_23",
+      "full_name": "_timescaledb_internal._direct_view_23"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_direct_view_24",
+      "full_name": "_timescaledb_internal._direct_view_24"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_direct_view_25",
+      "full_name": "_timescaledb_internal._direct_view_25"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_13_35_chunk",
+      "full_name": "_timescaledb_internal._hyper_13_35_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_13_36_chunk",
+      "full_name": "_timescaledb_internal._hyper_13_36_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_13_49_chunk",
+      "full_name": "_timescaledb_internal._hyper_13_49_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_22_45_chunk",
+      "full_name": "_timescaledb_internal._hyper_22_45_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_23_46_chunk",
+      "full_name": "_timescaledb_internal._hyper_23_46_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_24_47_chunk",
+      "full_name": "_timescaledb_internal._hyper_24_47_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_25_48_chunk",
+      "full_name": "_timescaledb_internal._hyper_25_48_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_5_11_chunk",
+      "full_name": "_timescaledb_internal._hyper_5_11_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_5_12_chunk",
+      "full_name": "_timescaledb_internal._hyper_5_12_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_5_13_chunk",
+      "full_name": "_timescaledb_internal._hyper_5_13_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_5_14_chunk",
+      "full_name": "_timescaledb_internal._hyper_5_14_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_5_15_chunk",
+      "full_name": "_timescaledb_internal._hyper_5_15_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_5_20_chunk",
+      "full_name": "_timescaledb_internal._hyper_5_20_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_5_22_chunk",
+      "full_name": "_timescaledb_internal._hyper_5_22_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_5_50_chunk",
+      "full_name": "_timescaledb_internal._hyper_5_50_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_hyper_5_51_chunk",
+      "full_name": "_timescaledb_internal._hyper_5_51_chunk"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_materialized_hypertable_22",
+      "full_name": "_timescaledb_internal._materialized_hypertable_22"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_materialized_hypertable_23",
+      "full_name": "_timescaledb_internal._materialized_hypertable_23"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_materialized_hypertable_24",
+      "full_name": "_timescaledb_internal._materialized_hypertable_24"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_materialized_hypertable_25",
+      "full_name": "_timescaledb_internal._materialized_hypertable_25"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_partial_view_22",
+      "full_name": "_timescaledb_internal._partial_view_22"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_partial_view_23",
+      "full_name": "_timescaledb_internal._partial_view_23"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_partial_view_24",
+      "full_name": "_timescaledb_internal._partial_view_24"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_partial_view_25",
+      "full_name": "_timescaledb_internal._partial_view_25"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "bgw_job_stat",
+      "full_name": "_timescaledb_internal.bgw_job_stat"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "bgw_job_stat_history",
+      "full_name": "_timescaledb_internal.bgw_job_stat_history"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "bgw_policy_chunk_stats",
+      "full_name": "_timescaledb_internal.bgw_policy_chunk_stats"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "compressed_chunk_stats",
+      "full_name": "_timescaledb_internal.compressed_chunk_stats"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "hypertable_chunk_local_size",
+      "full_name": "_timescaledb_internal.hypertable_chunk_local_size"
+    },
+    {
+      "schema": "public",
+      "name": "cagg_fault_daily",
+      "full_name": "public.cagg_fault_daily"
+    },
+    {
+      "schema": "public",
+      "name": "cagg_fault_hourly",
+      "full_name": "public.cagg_fault_hourly"
+    },
+    {
+      "schema": "public",
+      "name": "cagg_perf_1h_to_1d",
+      "full_name": "public.cagg_perf_1h_to_1d"
+    },
+    {
+      "schema": "public",
+      "name": "cagg_perf_5m_to_1h",
+      "full_name": "public.cagg_perf_5m_to_1h"
+    },
+    {
+      "schema": "public",
+      "name": "data_centers",
+      "full_name": "public.data_centers"
+    },
+    {
+      "schema": "public",
+      "name": "data_import_logs",
+      "full_name": "public.data_import_logs"
+    },
+    {
+      "schema": "public",
+      "name": "device_display_override",
+      "full_name": "public.device_display_override"
+    },
+    {
+      "schema": "public",
+      "name": "enhanced_export_actions",
+      "full_name": "public.enhanced_export_actions"
+    },
+    {
+      "schema": "public",
+      "name": "enhanced_export_sessions",
+      "full_name": "public.enhanced_export_sessions"
+    },
+    {
+      "schema": "public",
+      "name": "enhanced_export_step_logs",
+      "full_name": "public.enhanced_export_step_logs"
+    },
+    {
+      "schema": "public",
+      "name": "equipment",
+      "full_name": "public.equipment"
+    },
+    {
+      "schema": "public",
+      "name": "equipment_aliases",
+      "full_name": "public.equipment_aliases"
+    },
+    {
+      "schema": "public",
+      "name": "equipment_name_overrides",
+      "full_name": "public.equipment_name_overrides"
+    },
+    {
+      "schema": "public",
+      "name": "export_downloads",
+      "full_name": "public.export_downloads"
+    },
+    {
+      "schema": "public",
+      "name": "export_interactions",
+      "full_name": "public.export_interactions"
+    },
+    {
+      "schema": "public",
+      "name": "export_page_visits",
+      "full_name": "public.export_page_visits"
+    },
+    {
+      "schema": "public",
+      "name": "export_performance",
+      "full_name": "public.export_performance"
+    },
+    {
+      "schema": "public",
+      "name": "export_session_overview",
+      "full_name": "public.export_session_overview"
+    },
+    {
+      "schema": "public",
+      "name": "export_sessions",
+      "full_name": "public.export_sessions"
+    },
+    {
+      "schema": "public",
+      "name": "export_step_logs",
+      "full_name": "public.export_step_logs"
+    },
+    {
+      "schema": "public",
+      "name": "export_web_log",
+      "full_name": "public.export_web_log"
+    },
+    {
+      "schema": "public",
+      "name": "fault_data_import_logs",
+      "full_name": "public.fault_data_import_logs"
+    },
+    {
+      "schema": "public",
+      "name": "fault_equipment_master",
+      "full_name": "public.fault_equipment_master"
+    },
+    {
+      "schema": "public",
+      "name": "fault_performance_data",
+      "full_name": "public.fault_performance_data"
+    },
+    {
+      "schema": "public",
+      "name": "metric_aliases",
+      "full_name": "public.metric_aliases"
+    },
+    {
+      "schema": "public",
+      "name": "metric_display_override_device",
+      "full_name": "public.metric_display_override_device"
+    },
+    {
+      "schema": "public",
+      "name": "metric_display_override_site",
+      "full_name": "public.metric_display_override_site"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data",
+      "full_name": "public.performance_data"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data_2025_08",
+      "full_name": "public.performance_data_2025_08"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data_2025_09",
+      "full_name": "public.performance_data_2025_09"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data_2025_10",
+      "full_name": "public.performance_data_2025_10"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data_import_logs",
+      "full_name": "public.performance_data_import_logs"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data_old",
+      "full_name": "public.performance_data_old"
+    },
+    {
+      "schema": "public",
+      "name": "performance_equipment_master",
+      "full_name": "public.performance_equipment_master"
+    },
+    {
+      "schema": "public",
+      "name": "performance_metrics",
+      "full_name": "public.performance_metrics"
+    },
+    {
+      "schema": "public",
+      "name": "pipeline_performance_stats",
+      "full_name": "public.pipeline_performance_stats"
+    },
+    {
+      "schema": "public",
+      "name": "users",
+      "full_name": "public.users"
+    },
+    {
+      "schema": "public",
+      "name": "v_datacenter_stats",
+      "full_name": "public.v_datacenter_stats"
+    },
+    {
+      "schema": "public",
+      "name": "v_devices_by_site",
+      "full_name": "public.v_devices_by_site"
+    },
+    {
+      "schema": "public",
+      "name": "v_equipment_classification",
+      "full_name": "public.v_equipment_classification"
+    },
+    {
+      "schema": "public",
+      "name": "v_equipment_display_names",
+      "full_name": "public.v_equipment_display_names"
+    },
+    {
+      "schema": "public",
+      "name": "v_equipment_latest_status",
+      "full_name": "public.v_equipment_latest_status"
+    },
+    {
+      "schema": "public",
+      "name": "v_equipment_resolved",
+      "full_name": "public.v_equipment_resolved"
+    },
+    {
+      "schema": "public",
+      "name": "v_equipment_summary",
+      "full_name": "public.v_equipment_summary"
+    },
+    {
+      "schema": "public",
+      "name": "v_export_session_summary",
+      "full_name": "public.v_export_session_summary"
+    },
+    {
+      "schema": "public",
+      "name": "v_fault_import_statistics",
+      "full_name": "public.v_fault_import_statistics"
+    },
+    {
+      "schema": "public",
+      "name": "v_fault_performance_summary",
+      "full_name": "public.v_fault_performance_summary"
+    },
+    {
+      "schema": "public",
+      "name": "v_import_statistics",
+      "full_name": "public.v_import_statistics"
+    },
+    {
+      "schema": "public",
+      "name": "v_latest_performance_data",
+      "full_name": "public.v_latest_performance_data"
+    },
+    {
+      "schema": "public",
+      "name": "v_metric_resolved",
+      "full_name": "public.v_metric_resolved"
+    },
+    {
+      "schema": "public",
+      "name": "v_metrics_by_device",
+      "full_name": "public.v_metrics_by_device"
+    },
+    {
+      "schema": "public",
+      "name": "v_performance_import_statistics",
+      "full_name": "public.v_performance_import_statistics"
+    },
+    {
+      "schema": "public",
+      "name": "v_performance_summary",
+      "full_name": "public.v_performance_summary"
+    },
+    {
+      "schema": "public",
+      "name": "v_site_performance_comparison",
+      "full_name": "public.v_site_performance_comparison"
+    },
+    {
+      "schema": "public",
+      "name": "v_sites_summary",
+      "full_name": "public.v_sites_summary"
+    },
+    {
+      "schema": "public",
+      "name": "v_timeseries_data",
+      "full_name": "public.v_timeseries_data"
+    }
+  ],
+  "views": [
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_direct_view_22",
+      "full_name": "_timescaledb_internal._direct_view_22"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_direct_view_23",
+      "full_name": "_timescaledb_internal._direct_view_23"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_direct_view_24",
+      "full_name": "_timescaledb_internal._direct_view_24"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_direct_view_25",
+      "full_name": "_timescaledb_internal._direct_view_25"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_partial_view_22",
+      "full_name": "_timescaledb_internal._partial_view_22"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_partial_view_23",
+      "full_name": "_timescaledb_internal._partial_view_23"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_partial_view_24",
+      "full_name": "_timescaledb_internal._partial_view_24"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "_partial_view_25",
+      "full_name": "_timescaledb_internal._partial_view_25"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "compressed_chunk_stats",
+      "full_name": "_timescaledb_internal.compressed_chunk_stats"
+    },
+    {
+      "schema": "_timescaledb_internal",
+      "name": "hypertable_chunk_local_size",
+      "full_name": "_timescaledb_internal.hypertable_chunk_local_size"
+    },
+    {
+      "schema": "public",
+      "name": "cagg_fault_daily",
+      "full_name": "public.cagg_fault_daily"
+    },
+    {
+      "schema": "public",
+      "name": "cagg_fault_hourly",
+      "full_name": "public.cagg_fault_hourly"
+    },
+    {
+      "schema": "public",
+      "name": "cagg_perf_1h_to_1d",
+      "full_name": "public.cagg_perf_1h_to_1d"
+    },
+    {
+      "schema": "public",
+      "name": "cagg_perf_5m_to_1h",
+      "full_name": "public.cagg_perf_5m_to_1h"
+    },
+    {
+      "schema": "public",
+      "name": "export_session_overview",
+      "full_name": "public.export_session_overview"
+    },
+    {
+      "schema": "public",
+      "name": "v_datacenter_stats",
+      "full_name": "public.v_datacenter_stats"
+    },
+    {
+      "schema": "public",
+      "name": "v_devices_by_site",
+      "full_name": "public.v_devices_by_site"
+    },
+    {
+      "schema": "public",
+      "name": "v_equipment_classification",
+      "full_name": "public.v_equipment_classification"
+    },
+    {
+      "schema": "public",
+      "name": "v_equipment_display_names",
+      "full_name": "public.v_equipment_display_names"
+    },
+    {
+      "schema": "public",
+      "name": "v_equipment_latest_status",
+      "full_name": "public.v_equipment_latest_status"
+    },
+    {
+      "schema": "public",
+      "name": "v_equipment_resolved",
+      "full_name": "public.v_equipment_resolved"
+    },
+    {
+      "schema": "public",
+      "name": "v_equipment_summary",
+      "full_name": "public.v_equipment_summary"
+    },
+    {
+      "schema": "public",
+      "name": "v_export_session_summary",
+      "full_name": "public.v_export_session_summary"
+    },
+    {
+      "schema": "public",
+      "name": "v_fault_import_statistics",
+      "full_name": "public.v_fault_import_statistics"
+    },
+    {
+      "schema": "public",
+      "name": "v_fault_performance_summary",
+      "full_name": "public.v_fault_performance_summary"
+    },
+    {
+      "schema": "public",
+      "name": "v_import_statistics",
+      "full_name": "public.v_import_statistics"
+    },
+    {
+      "schema": "public",
+      "name": "v_latest_performance_data",
+      "full_name": "public.v_latest_performance_data"
+    },
+    {
+      "schema": "public",
+      "name": "v_metric_resolved",
+      "full_name": "public.v_metric_resolved"
+    },
+    {
+      "schema": "public",
+      "name": "v_metrics_by_device",
+      "full_name": "public.v_metrics_by_device"
+    },
+    {
+      "schema": "public",
+      "name": "v_performance_import_statistics",
+      "full_name": "public.v_performance_import_statistics"
+    },
+    {
+      "schema": "public",
+      "name": "v_performance_summary",
+      "full_name": "public.v_performance_summary"
+    },
+    {
+      "schema": "public",
+      "name": "v_site_performance_comparison",
+      "full_name": "public.v_site_performance_comparison"
+    },
+    {
+      "schema": "public",
+      "name": "v_sites_summary",
+      "full_name": "public.v_sites_summary"
+    },
+    {
+      "schema": "public",
+      "name": "v_timeseries_data",
+      "full_name": "public.v_timeseries_data"
+    }
+  ],
+  "materialized_views": [],
+  "override_status": true,
+  "performance_tables": [
+    {
+      "schema": "public",
+      "name": "export_performance",
+      "full_name": "public.export_performance"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data",
+      "full_name": "public.performance_data"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data_2025_08",
+      "full_name": "public.performance_data_2025_08"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data_2025_09",
+      "full_name": "public.performance_data_2025_09"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data_2025_10",
+      "full_name": "public.performance_data_2025_10"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data_import_logs",
+      "full_name": "public.performance_data_import_logs"
+    },
+    {
+      "schema": "public",
+      "name": "performance_data_old",
+      "full_name": "public.performance_data_old"
+    },
+    {
+      "schema": "public",
+      "name": "performance_equipment_master",
+      "full_name": "public.performance_equipment_master"
+    },
+    {
+      "schema": "public",
+      "name": "performance_metrics",
+      "full_name": "public.performance_metrics"
+    },
+    {
+      "schema": "public",
+      "name": "pipeline_performance_stats",
+      "full_name": "public.pipeline_performance_stats"
+    },
+    {
+      "schema": "public",
+      "name": "v_latest_performance_data",
+      "full_name": "public.v_latest_performance_data"
+    },
+    {
+      "schema": "public",
+      "name": "v_performance_import_statistics",
+      "full_name": "public.v_performance_import_statistics"
+    },
+    {
+      "schema": "public",
+      "name": "v_performance_summary",
+      "full_name": "public.v_performance_summary"
+    },
+    {
+      "schema": "public",
+      "name": "v_site_performance_comparison",
+      "full_name": "public.v_site_performance_comparison"
+    }
+  ],
+  "fault_tables": [
+    {
+      "schema": "public",
+      "name": "cagg_fault_daily",
+      "full_name": "public.cagg_fault_daily"
+    },
+    {
+      "schema": "public",
+      "name": "cagg_fault_hourly",
+      "full_name": "public.cagg_fault_hourly"
+    },
+    {
+      "schema": "public",
+      "name": "fault_data_import_logs",
+      "full_name": "public.fault_data_import_logs"
+    },
+    {
+      "schema": "public",
+      "name": "fault_equipment_master",
+      "full_name": "public.fault_equipment_master"
+    },
+    {
+      "schema": "public",
+      "name": "fault_performance_data",
+      "full_name": "public.fault_performance_data"
+    },
+    {
+      "schema": "public",
+      "name": "v_fault_import_statistics",
+      "full_name": "public.v_fault_import_statistics"
+    },
+    {
+      "schema": "public",
+      "name": "v_fault_performance_summary",
+      "full_name": "public.v_fault_performance_summary"
+    }
+  ]
+}

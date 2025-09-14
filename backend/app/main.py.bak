@@ -1,0 +1,133 @@
+"""
+ECC800 Data Center Monitoring System
+แอปพลิเคชันหลักสำหรับระบบติดตามศูนย์ข้อมูล ECC800
+"""
+from datetime import datetime
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+print("🚀 Starting ECC800 Backend...")
+
+# Import settings
+try:
+    from app.core.config import settings
+    print("✅ Settings imported")
+except ImportError as e:
+    print(f"⚠️ Settings import failed: {e}")
+    class Settings:
+        app_base_path = "/ecc800"
+        cors_origins = ["*"]
+        debug = False
+    settings = Settings()
+
+# สร้าง FastAPI app
+app = FastAPI(
+    title="ECC800 Monitoring System",
+    description="ระบบติดตามและจัดการศูนย์ข้อมูล ECC800 โรงพยาบาล",
+    version="1.0.0",
+    docs_url=f"{settings.app_base_path}/docs",
+    redoc_url=f"{settings.app_base_path}/redoc",
+    openapi_url=f"{settings.app_base_path}/openapi.json"
+)
+print("✅ FastAPI app created")
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=getattr(settings, 'cors_origins', ["*"]),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+print("✅ CORS middleware added")
+
+# Health check endpoint
+@app.get("/health")
+@app.get(f"{settings.app_base_path}/health")
+async def health_check():
+    """ตรวจสอบสุขภาพของระบบ"""
+    return {
+        "status": "ok",
+        "database": "connected",
+        "version": "1.0.0",
+        "timestamp": datetime.now().isoformat(),
+        "message": "ระบบ ECC800 พร้อมใช้งาน"
+    }
+
+# Root endpoint
+@app.get("/")
+@app.get(f"{settings.app_base_path}")
+async def root():
+    """หน้าแรกของ API"""
+    return {
+        "message": "ยินดีต้อนรับสู่ระบบติดตาม ECC800 ศูนย์ข้อมูลโรงพยาบาล",
+        "version": "1.0.0",
+        "docs": f"https://10.251.150.222:3344{settings.app_base_path}/docs",
+        "health": f"https://10.251.150.222:3344{settings.app_base_path}/health",
+        "status": "ready"
+    }
+
+print("✅ Basic endpoints defined")
+
+# Import และ register API routes
+print("🔧 Importing API routers...")
+try:
+    from app.api.routes import sites, analytics, metrics
+    
+    # Register sites router
+    app.include_router(
+        sites.router,
+        prefix=f"{settings.app_base_path}/api",
+        tags=["Sites & Equipment"]
+    )
+    print("✅ Sites router registered")
+    
+    # Register metrics router  
+    app.include_router(
+        metrics.router,
+        prefix=f"{settings.app_base_path}/api", 
+        tags=["Metrics & Time-series"]
+    )
+    print("✅ Metrics router registered")
+    
+    # Register analytics router
+    app.include_router(
+        analytics.router,
+        prefix=f"{settings.app_base_path}/api",
+        tags=["Analytics"]
+    )
+    print("✅ Analytics router registered")
+    
+    # Show registered routes
+    api_routes = [r for r in app.routes if hasattr(r, 'path') and '/api/' in r.path]
+    print(f"✅ Total API routes registered: {len(api_routes)}")
+    for i, route in enumerate(api_routes):
+        if i < 5:  # Show first 5
+            if hasattr(route, 'path'):
+                methods = list(route.methods) if hasattr(route, 'methods') else ['GET']
+                print(f"  {methods} {route.path}")
+            
+except Exception as e:
+    print(f"❌ Router registration error: {e}")
+    import traceback
+    traceback.print_exc()
+
+print("🎉 ECC800 Backend initialization complete!")
+
+# Exception handlers
+@app.exception_handler(404)
+async def not_found_handler(request, exc):
+    return JSONResponse(
+        status_code=404,
+        content={"detail": "ไม่พบทรัพยากรที่ร้องขอ", "path": str(request.url.path)}
+    )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        app,
+        host="0.0.0.0", 
+        port=8000,
+        reload=False
+    )

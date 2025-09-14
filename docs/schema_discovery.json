@@ -1,0 +1,579 @@
+{
+  "hypertables": [
+    {
+      "schemaname": "public",
+      "tablename": "fault_performance_data",
+      "owner": "apirak",
+      "num_dimensions": 2,
+      "num_chunks": 9,
+      "compression_enabled": true,
+      "compressed_chunks": 0,
+      "uncompressed_chunks": 9
+    },
+    {
+      "schemaname": "public",
+      "tablename": "performance_data",
+      "owner": "apirak",
+      "num_dimensions": 1,
+      "num_chunks": 3,
+      "compression_enabled": false,
+      "compressed_chunks": 0,
+      "uncompressed_chunks": 3
+    }
+  ],
+  "dimensions": [
+    {
+      "schema_name": "_timescaledb_internal",
+      "table_name": "_materialized_hypertable_22",
+      "column_name": "hour_bucket",
+      "column_type": "timestamp without time zone",
+      "time_interval": "70 days, 0:00:00",
+      "integer_interval": null,
+      "integer_now_func": null,
+      "dimension_type": "Time"
+    },
+    {
+      "schema_name": "_timescaledb_internal",
+      "table_name": "_materialized_hypertable_23",
+      "column_name": "day_bucket",
+      "column_type": "timestamp without time zone",
+      "time_interval": "70 days, 0:00:00",
+      "integer_interval": null,
+      "integer_now_func": null,
+      "dimension_type": "Time"
+    },
+    {
+      "schema_name": "_timescaledb_internal",
+      "table_name": "_materialized_hypertable_24",
+      "column_name": "hour_bucket",
+      "column_type": "timestamp without time zone",
+      "time_interval": "70 days, 0:00:00",
+      "integer_interval": null,
+      "integer_now_func": null,
+      "dimension_type": "Time"
+    },
+    {
+      "schema_name": "_timescaledb_internal",
+      "table_name": "_materialized_hypertable_25",
+      "column_name": "day_bucket",
+      "column_type": "timestamp without time zone",
+      "time_interval": "70 days, 0:00:00",
+      "integer_interval": null,
+      "integer_now_func": null,
+      "dimension_type": "Time"
+    },
+    {
+      "schema_name": "public",
+      "table_name": "fault_performance_data",
+      "column_name": "site_code",
+      "column_type": "character varying",
+      "time_interval": null,
+      "integer_interval": null,
+      "integer_now_func": null,
+      "dimension_type": "Space"
+    },
+    {
+      "schema_name": "public",
+      "table_name": "fault_performance_data",
+      "column_name": "statistical_start_time",
+      "column_type": "timestamp without time zone",
+      "time_interval": "7 days, 0:00:00",
+      "integer_interval": null,
+      "integer_now_func": null,
+      "dimension_type": "Time"
+    },
+    {
+      "schema_name": "public",
+      "table_name": "performance_data",
+      "column_name": "statistical_start_time",
+      "column_type": "timestamp without time zone",
+      "time_interval": "7 days, 0:00:00",
+      "integer_interval": null,
+      "integer_now_func": null,
+      "dimension_type": "Time"
+    }
+  ],
+  "tables": [
+    {
+      "schemaname": "public",
+      "tablename": "data_centers",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "data_import_logs",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "device_display_override",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "enhanced_export_actions",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "enhanced_export_sessions",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "enhanced_export_step_logs",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "equipment",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "equipment_aliases",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "export_downloads",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "export_interactions",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "export_page_visits",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "export_performance",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "export_sessions",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "export_step_logs",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "export_web_log",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "fault_data_import_logs",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "fault_equipment_master",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "fault_performance_data",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "metric_aliases",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "metric_display_override_device",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "metric_display_override_site",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "performance_data",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "performance_data_2025_08",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "performance_data_2025_09",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "performance_data_2025_10",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "performance_data_import_logs",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "performance_data_old",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "performance_equipment_master",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "performance_metrics",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "pipeline_performance_stats",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "users",
+      "tableowner": "apirak",
+      "object_type": "table"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "cagg_fault_daily",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "cagg_fault_hourly",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "cagg_perf_1h_to_1d",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "cagg_perf_5m_to_1h",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "export_session_overview",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_datacenter_stats",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_devices_by_site",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_equipment_classification",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_equipment_latest_status",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_equipment_resolved",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_equipment_summary",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_export_session_summary",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_fault_import_statistics",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_fault_performance_summary",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_import_statistics",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_latest_performance_data",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_metric_resolved",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_metrics_by_device",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_performance_import_statistics",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_performance_summary",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_site_performance_comparison",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_sites_summary",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "v_timeseries_data",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_experimental",
+      "tablename": "policies",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_information",
+      "tablename": "chunk_compression_settings",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_information",
+      "tablename": "chunks",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_information",
+      "tablename": "compression_settings",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_information",
+      "tablename": "continuous_aggregates",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_information",
+      "tablename": "dimensions",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_information",
+      "tablename": "hypertable_compression_settings",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_information",
+      "tablename": "hypertables",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_information",
+      "tablename": "job_errors",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_information",
+      "tablename": "job_history",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_information",
+      "tablename": "job_stats",
+      "tableowner": "apirak",
+      "object_type": "view"
+    },
+    {
+      "schemaname": "timescaledb_information",
+      "tablename": "jobs",
+      "tableowner": "apirak",
+      "object_type": "view"
+    }
+  ],
+  "caggs": [
+    {
+      "materialization_hypertable_schema": "_timescaledb_internal",
+      "materialization_hypertable_name": "_materialized_hypertable_25",
+      "view_schema": "public",
+      "view_name": "cagg_fault_daily"
+    },
+    {
+      "materialization_hypertable_schema": "_timescaledb_internal",
+      "materialization_hypertable_name": "_materialized_hypertable_24",
+      "view_schema": "public",
+      "view_name": "cagg_fault_hourly"
+    },
+    {
+      "materialization_hypertable_schema": "_timescaledb_internal",
+      "materialization_hypertable_name": "_materialized_hypertable_23",
+      "view_schema": "public",
+      "view_name": "cagg_perf_1h_to_1d"
+    },
+    {
+      "materialization_hypertable_schema": "_timescaledb_internal",
+      "materialization_hypertable_name": "_materialized_hypertable_22",
+      "view_schema": "public",
+      "view_name": "cagg_perf_5m_to_1h"
+    }
+  ],
+  "override_exists": true,
+  "equipment_tables": [
+    {
+      "table_name": "device_display_override"
+    },
+    {
+      "table_name": "equipment"
+    },
+    {
+      "table_name": "equipment_aliases"
+    },
+    {
+      "table_name": "fault_equipment_master"
+    },
+    {
+      "table_name": "metric_display_override_device"
+    },
+    {
+      "table_name": "performance_equipment_master"
+    },
+    {
+      "table_name": "v_devices_by_site"
+    },
+    {
+      "table_name": "v_equipment_classification"
+    },
+    {
+      "table_name": "v_equipment_latest_status"
+    },
+    {
+      "table_name": "v_equipment_resolved"
+    },
+    {
+      "table_name": "v_equipment_summary"
+    },
+    {
+      "table_name": "v_metrics_by_device"
+    }
+  ],
+  "site_tables": [
+    {
+      "table_name": "data_centers"
+    },
+    {
+      "table_name": "metric_display_override_site"
+    },
+    {
+      "table_name": "v_datacenter_stats"
+    },
+    {
+      "table_name": "v_devices_by_site"
+    },
+    {
+      "table_name": "v_site_performance_comparison"
+    },
+    {
+      "table_name": "v_sites_summary"
+    }
+  ]
+}
