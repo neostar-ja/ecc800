@@ -16,6 +16,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    cssCodeSplit: true,
+    minify: 'terser',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -24,6 +26,12 @@ export default defineConfig({
           charts: ['recharts']
         }
       }
+    }
+  },
+  css: {
+    devSourcemap: true,
+    postcss: {
+      plugins: []
     }
   }
 })

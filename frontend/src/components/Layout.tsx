@@ -37,6 +37,7 @@ const menuItems = [
   { id: 'dashboard', label: 'แดชบอร์ด', icon: Dashboard, path: '/dashboard' },
   { id: 'dashboard-modern', label: 'แดชบอร์ดสมัยใหม่', icon: Dashboard, path: '/dashboard-modern' },
   { id: 'dashboard-responsive', label: 'แดชบอร์ด Responsive', icon: Dashboard, path: '/dashboard-responsive' },
+  { id: 'new-dashboard', label: 'Dashboard Designer', icon: Dashboard, path: '/new-dashboard' },
   { id: 'sites', label: 'ไซต์', icon: Business, path: '/sites' },
   { id: 'equipment', label: 'อุปกรณ์', icon: Memory, path: '/equipment' },
   { id: 'metrics', label: 'เมตริก', icon: Analytics, path: '/metrics' },

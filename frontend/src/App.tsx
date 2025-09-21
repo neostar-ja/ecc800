@@ -1,29 +1,29 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import { lightTheme, darkTheme } from './theme';
+import { ThemeProvider } from './contexts/ThemeProvider';
 import { useAuthStore } from './stores/authStore';
 
 // Pages
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfessionalDataCenterMonitoring from './components/ProfessionalDataCenterMonitoring';
+import RackLayoutDashboard from './pages/RackLayoutDashboard';
+import RackLayoutDashboardFixed from './pages/RackLayoutDashboard_Fixed';
+import RackLayoutDashboardEnhanced from './pages/RackLayoutDashboard_Enhanced';
+import RackLayoutDashboardEnhancedOriginal from './pages/RackLayoutDashboard_Enhanced_Original';
+import RackLayoutDashboardEnhancedFixed from './pages/RackLayoutDashboard_EnhancedFixed';
 import SitesPage from './pages/SitesPage';
 import EquipmentPage from './pages/EquipmentPage';
 import MetricsPage from './pages/MetricsPage';
-import EnhancedMetricsPage from './pages/EnhancedMetricsPage';
 import ImprovedMetricsPage from './pages/ImprovedMetricsPage';
 import FaultsPage from './pages/FaultsPage';
 import ImprovedFaultsPage from './pages/ImprovedFaultsPage';
 import ReportsPage from './pages/ReportsPage';
-import Layout from './components/Layout';
+import ThaiModernLayout from './components/ThaiModernLayout';
 
-// New redesigned components
-import MetricsPageV2 from './components/MetricsPageV2';
+// Components
 import MetricsTestPage from './components/MetricsTestPage';
-import ModernDashboardPage from './pages/ModernDashboardPage';
-import ResponsiveDataCenterDashboard from './components/ResponsiveDataCenterDashboard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,43 +60,27 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const [darkMode, setDarkMode] = React.useState(false);
-
-  React.useEffect(() => {
-    const savedTheme = localStorage.getItem('ecc800-theme');
-    if (savedTheme) {
-      setDarkMode(savedTheme === 'dark');
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    localStorage.setItem('ecc800-theme', newMode ? 'dark' : 'light');
-  };
-
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
-        <CssBaseline />
+      <ThemeProvider>
         <Router basename="/ecc800">
           <Routes>
             <Route path="/" element={<LoginPage />} />
-            
-            <Route path="/" element={
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/*" element={
               <ProtectedRoute>
-                <Layout darkMode={darkMode} toggleTheme={toggleTheme} />
+                <ThaiModernLayout />
               </ProtectedRoute>
             }>
               <Route path="dashboard" element={<ProfessionalDataCenterMonitoring />} />
-              <Route path="dashboard-modern" element={<ModernDashboardPage />} />
-              <Route path="dashboard-responsive" element={<ResponsiveDataCenterDashboard />} />
               <Route path="dashboard-old" element={<DashboardPage />} />
+              <Route path="rack-layout" element={<RackLayoutDashboard />} />
+              <Route path="rack-layout-fixed" element={<RackLayoutDashboardFixed />} />
+              <Route path="rack-layout-enhanced" element={<RackLayoutDashboardEnhancedFixed />} />
+              <Route path="rack-layout-enhanced-original" element={<RackLayoutDashboardEnhancedOriginal />} />
               <Route path="sites" element={<SitesPage />} />
               <Route path="equipment" element={<EquipmentPage />} />
               <Route path="metrics" element={<ImprovedMetricsPage />} />
-              <Route path="metrics-enhanced" element={<EnhancedMetricsPage />} />
-              <Route path="metrics-v2" element={<MetricsPageV2 />} />
               <Route path="metrics-old" element={<MetricsPage />} />
               <Route path="faults" element={<ImprovedFaultsPage />} />
               <Route path="faults-old" element={<FaultsPage />} />

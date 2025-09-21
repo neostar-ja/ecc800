@@ -6,7 +6,18 @@ function ServerRack({ position, id, label, type = 'server', isActive = true, onC
   const [animationPhase, setAnimationPhase] = useState(0);
   // Enlarge rack size with more vertical space for future info
   const RACK_SCALE_X = 1.30;
-  const RACK_SCALE_Y = 1.50;
+  const RACK_SCALE_Y = 2.00; // เพิ่มขนาดแนวตั้งให้กว้างขึ้นเพื่อรองรับข้อมูล
+  // Keep inner content (texts/icons/effects) visually non-stretched in Y
+  const NON_STRETCH_SCALE_Y = 1 / RACK_SCALE_Y;
+  // Inner rack dimensions (unscaled)
+  const RACK_INNER_W = 125;
+  const RACK_INNER_H = 100;
+  // Bottom-right ID badge metrics
+  const BADGE_W = 28;
+  const BADGE_H = 16;
+  const BADGE_MARGIN = 6;
+  const BADGE_X = RACK_INNER_W - BADGE_W - BADGE_MARGIN; // 91
+  const BADGE_Y = RACK_INNER_H - BADGE_H - BADGE_MARGIN; // 78
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -31,12 +42,47 @@ function ServerRack({ position, id, label, type = 'server', isActive = true, onC
     return '#334155';
   };
 
-  const getIcon = () => {
-    if (type === 'network') return '🌐';
-    if (type === 'aircon') return '❄️';
-    if (type === 'battery') return '🔋';
-    if (type === 'ups') return '⚡';
-    return '�';
+  // Inline SVG icons for crisp rendering
+  const ICONS = {
+    server: () => (
+      <g>
+        <rect x="0" y="2" width="16" height="12" rx="2" fill="#e5e7eb" stroke="#94a3b8" strokeWidth="1"/>
+        <rect x="6" y="14" width="4" height="2" rx="1" fill="#94a3b8"/>
+      </g>
+    ),
+    network: () => (
+      <g>
+        <circle cx="8" cy="8" r="7" fill="none" stroke="#e2e8f0" strokeWidth="1.2"/>
+        <path d="M1,8 H15 M8,1 V15 M3,4 C6,6 10,6 13,4 M3,12 C6,10 10,10 13,12" stroke="#94a3b8" strokeWidth="1" fill="none"/>
+      </g>
+    ),
+    aircon: () => (
+      <g>
+        <circle cx="8" cy="8" r="6" fill="none" stroke="#bae6fd" strokeWidth="1"/>
+        <g>
+          <path d="M8,2 L8,14 M2,8 L14,8 M3.5,3.5 L12.5,12.5 M12.5,3.5 L3.5,12.5" stroke="#38bdf8" strokeWidth="1.1"/>
+        </g>
+        <animateTransform attributeName="transform" type="rotate" from="0 8 8" to="360 8 8" dur="6s" repeatCount="indefinite"/>
+      </g>
+    ),
+    battery: () => (
+      <g>
+        <rect x="1" y="3" width="14" height="10" rx="2" fill="#e5e7eb" stroke="#94a3b8" strokeWidth="1"/>
+        <rect x="15" y="6" width="2" height="4" rx="1" fill="#94a3b8"/>
+        <rect x="3" y="5" width="8" height="6" rx="1" fill="#22c55e"/>
+      </g>
+    ),
+    ups: () => (
+      <g>
+        <polygon points="8,2 6,8 9,8 7,14 12,6 9,6" fill="#fbbf24" stroke="#f59e0b" strokeWidth="0.8"/>
+      </g>
+    ),
+  };
+  const renderTypeIcon = () => {
+    const C = ICONS[type] || ICONS.server;
+    return (
+      <g transform="translate(10,14)"><C /></g>
+    );
   };
 
   const getCpuUsage = () => {
@@ -100,8 +146,8 @@ function ServerRack({ position, id, label, type = 'server', isActive = true, onC
           width="125"
           height="100"
           fill={`url(#rackGrad-${site}-${id})`}
-          stroke={hovered ? "#fbbf24" : "#475569"}
-          strokeWidth={hovered ? "5" : "3"}
+          stroke={hovered ? "#94a3b8" : "#475569"}
+          strokeWidth={hovered ? "4" : "3"}
           rx="12"
           ry="12"
         >
@@ -113,7 +159,7 @@ function ServerRack({ position, id, label, type = 'server', isActive = true, onC
           />
           <animate
             attributeName="stroke-width"
-            values={hovered ? "3;5;3" : "2.5"}
+            values={hovered ? "3;4;3" : "3"}
             dur="1.8s"
             repeatCount="indefinite"
           />
@@ -250,7 +296,8 @@ function ServerRack({ position, id, label, type = 'server', isActive = true, onC
         )}
       </g>
       
-      {/* Modern status indicators */}
+      {/* Modern status indicators - REMOVED: ลบลูกสรสีแดงและสีฟ้าตามคำขอ */}
+      {/*
       <g transform="translate(15, 15)">
         <circle
           cx="0"
@@ -286,169 +333,124 @@ function ServerRack({ position, id, label, type = 'server', isActive = true, onC
           />
         </circle>
       </g>
+      */}
 
-      {/* Row ID badge (bottom-right) */}
-      <g transform="translate(92, 82)">
-        <rect width="28" height="16" rx="8" ry="8" fill="rgba(255,255,255,0.9)" stroke="#94a3b8" strokeWidth="0.8" />
-        <text x="14" y="12" textAnchor="middle" fontSize="9" fill="#111827" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="700">
-          {id}
+      {/* Non-stretched inner content for perfect symmetry (icons, texts, type-specific UI) */}
+      <g transform={`scale(1, ${NON_STRETCH_SCALE_Y})`}>
+        {/* Title */}
+        <text
+          x="62"
+          y="16"
+          textAnchor="middle"
+          fontSize="11"
+          fill="white"
+          fontFamily="'IBM Plex Sans Thai', system-ui"
+          fontWeight="700"
+        >
+          {label}
         </text>
-      </g>
-      
-      {/* Enhanced type-specific elements */}
-      {type === 'aircon' && (
-        <g>
-          {/* Advanced fan animation */}
-          <g transform="translate(90, 40)">
-            <circle cx="0" cy="0" r="16" fill="rgba(14, 165, 233, 0.1)" stroke="#0ea5e9" strokeWidth="2"/>
-            <g>
-              <path d="M-12,0 L12,0 M0,-12 L0,12 M-8,-8 L8,8 M-8,8 L8,-8" 
-                    stroke="#0284c7" strokeWidth="2.5" strokeLinecap="round"/>
-              <animateTransform
-                attributeName="transform"
-                type="rotate"
-                values="0;360"
-                dur="0.8s"
-                repeatCount="indefinite"
-              />
+        
+        {/* Leading SVG icon */}
+        {renderTypeIcon()}
+        {/* Row ID badge (bottom-right precise) */}
+        <g transform={`translate(${BADGE_X}, ${BADGE_Y})`}>
+          <rect width="28" height="16" rx="8" ry="8" fill="rgba(255,255,255,0.9)" stroke="#94a3b8" strokeWidth="0.8" />
+          <text x="14" y="12" textAnchor="middle" fontSize="9" fill="#111827" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="700">
+            {id}
+          </text>
+        </g>
+        
+        {/* Enhanced type-specific elements */}
+        {type === 'aircon' && (
+          <g>
+            {/* Fan */}
+            <g transform="translate(95, 48)">
+              <circle cx="0" cy="0" r="14" fill="rgba(14,165,233,0.12)" stroke="#38bdf8" strokeWidth="1.5"/>
+              <path d="M-10,0 L10,0 M0,-10 L0,10" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"/>
+            </g>
+            {/* Temperature */}
+            <text x="62" y="62" textAnchor="middle" fontSize="11" fill="#e0f2fe" 
+                  fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="600">
+              {getTemperature()}°C
+            </text>
+          </g>
+        )}
+        
+        {type === 'network' && (
+          <g>
+            {/* Uniform network ports (deterministic pattern) */}
+            {[...Array(12)].map((_, i) => {
+              const active = i < 9; // 9/12 active
+              const row = Math.floor(i / 6);
+              const col = i % 6;
+              return (
+                <rect
+                  key={i}
+                  x={32 + col * 12}
+                  y={40 + row * 8}
+                  width="8"
+                  height="4"
+                  fill={active ? '#22c55e' : '#64748b'}
+                  stroke="#ffffff"
+                  strokeWidth="0.4"
+                  rx="1.5"
+                />
+              );
+            })}
+            {/* Status pill */}
+            <g transform="translate(40, 64)">
+              <rect width="44" height="12" rx="6" fill="rgba(16,185,129,0.25)" stroke="#22c55e" strokeWidth="0.8" />
+              <text x="22" y="9" textAnchor="middle" fontSize="8" fill="#d1fae5" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="700">ONLINE</text>
             </g>
           </g>
-          
-          {/* Temperature display */}
-          <text x="62" y="68" textAnchor="middle" fontSize="10" fill="#ffffff" 
-                fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="600">
-            {getTemperature()}°C
-          </text>
-        </g>
-      )}
-      
-      {type === 'network' && (
-        <g>
-          {/* Modern network ports */}
-          {[...Array(12)].map((_, i) => (
-            <rect
-              key={i}
-              x={35 + (i % 6) * 12}
-              y={40 + Math.floor(i / 6) * 8}
-              width="8"
-              height="4"
-              fill={Math.random() > 0.4 ? '#22c55e' : '#f59e0b'}
-              stroke="#ffffff"
-              strokeWidth="0.5"
-              rx="2"
-            >
-              {Math.random() > 0.6 && (
-                <animate
-                  attributeName="fill"
-                  values="#22c55e;#06b6d4;#22c55e"
-                  dur="1.2s"
-                  repeatCount="indefinite"
+        )}
+        
+        {(type === 'battery' || type === 'ups') && (
+          <g>
+            {/* Power indicator bars (deterministic, no flicker) */}
+            {[...Array(8)].map((_, i) => {
+              const level = 6; // 6/8 good
+              const color = i < level ? '#22c55e' : i === level ? '#fbbf24' : '#ef4444';
+              return (
+                <rect
+                  key={i}
+                  x={25 + i * 12}
+                  y="38"
+                  width="8"
+                  height="22"
+                  fill={color}
+                  stroke="#e2e8f0"
+                  strokeWidth="0.8"
+                  rx="2.5"
                 />
-              )}
-            </rect>
-          ))}
-          
-          {/* Data flow indicator */}
-          <text x="62" y="68" textAnchor="middle" fontSize="9" fill="#ffffff" 
-                fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="500">
-            📊 ONLINE
-          </text>
-        </g>
-      )}
-      
-      {(type === 'battery' || type === 'ups') && (
-        <g>
-          {/* Advanced power indicator bars */}
-          {[...Array(8)].map((_, i) => (
-            <rect
-              key={i}
-              x={25 + i * 12}
-              y="35"
-              width="8"
-              height="25"
-              fill={i < 6 ? '#22c55e' : i < 7 ? '#fbbf24' : '#ef4444'}
-              stroke="#ffffff"
-              strokeWidth="1"
-              rx="3"
-            >
-              <animate
-                attributeName="opacity"
-                values="0.6;1;0.6"
-                dur={`${1.5 + i * 0.2}s`}
-                repeatCount="indefinite"
-              />
-            </rect>
-          ))}
-          
-          {/* Status text */}
-          <text x="62" y="74" textAnchor="middle" fontSize="9" fill="#ffffff" 
-                fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="600">
-            {type === 'battery' ? '🔋 OK' : '⚡ ON'}
-          </text>
-        </g>
-      )}
-      
-      {type === 'server' && (
-        <g>
-          {/* Modern ventilation design */}
-          {[...Array(8)].map((_, i) => (
-            <g key={i}>
-              <rect
-                x={32 + i * 11}
-                y="22"
-                width="7"
-                height="3"
-                fill="rgba(255,255,255,0.2)"
-                rx="1"
-              />
-              <rect
-                x={32 + i * 11}
-                y="32"
-                width="7"
-                height="3"
-                fill="rgba(255,255,255,0.2)"
-                rx="1"
-              />
+              );
+            })}
+            {/* Status pill */}
+            <g transform="translate(48, 64)">
+              <rect width="28" height="12" rx="6" fill="rgba(34,197,94,0.18)" stroke="#22c55e" strokeWidth="0.8" />
+              <text x="14" y="9" textAnchor="middle" fontSize="8" fill="#d1fae5" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="700">OK</text>
             </g>
-          ))}
-          
-          {/* Modern CPU/Memory indicator */}
-          <rect x="35" y="50" width="55" height="10" fill="rgba(255,255,255,0.1)" 
-                stroke="rgba(255,255,255,0.3)" strokeWidth="1" rx="5"/>
-          <rect x="37" y="52" width={51 * (getCpuUsage() / 100)} height="6" 
-                fill={getCpuUsage() > 80 ? '#ef4444' : getCpuUsage() > 60 ? '#fbbf24' : '#22c55e'} rx="3">
-            <animate
-              attributeName="width"
-              values={`${51 * 0.3};${51 * 0.7};${51 * (getCpuUsage() / 100)}`}
-              dur="3s"
-              repeatCount="indefinite"
-            />
-          </rect>
-          
-          <text x="62" y="74" textAnchor="middle" fontSize="8" fill="#ffffff" 
-                fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="500">
-            CPU: {getCpuUsage()}%
-          </text>
-        </g>
-      )}
-      
-      {/* Modern equipment icon */}
-      <text x="12" y="50" fontSize="18" fill="#ffffff">
-        {getIcon()}
-      </text>
-      
-      {/* Equipment label with modern typography */}
-      <text
-        x="62"
-        y="15"
-        textAnchor="middle"
-        fontSize="11"
-        fill="white"
-        fontFamily="'IBM Plex Sans Thai', system-ui"
-        fontWeight="700"
-      >
-        {label}
-      </text>
+          </g>
+        )}
+        
+        {type === 'server' && (
+          <g>
+            {/* Vent rows */}
+            {[...Array(8)].map((_, i) => (
+              <g key={i}>
+                <rect x={28 + i * 11} y="22" width="7" height="3" fill="rgba(255,255,255,0.18)" rx="1" />
+                <rect x={28 + i * 11} y="32" width="7" height="3" fill="rgba(255,255,255,0.18)" rx="1" />
+              </g>
+            ))}
+            {/* CPU bar */}
+            <rect x="24" y="50" width="76" height="10" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.25)" strokeWidth="1" rx="5"/>
+            <rect x="26" y="52" width={72 * (getCpuUsage() / 100)} height="6" fill={getCpuUsage() > 80 ? '#ef4444' : getCpuUsage() > 60 ? '#fbbf24' : '#22c55e'} rx="3"/>
+            <text x="62" y="72" textAnchor="middle" fontSize="9" fill="#e5e7eb" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="600">CPU: {getCpuUsage()}%</text>
+          </g>
+        )}
+        
+        {/* Bottom-right ID badge remains outside pills */}
+      </g>
     </g>
   );
 }
@@ -656,10 +658,11 @@ function ProfessionalDataCenterMonitoring() {
         ...rack,
         position: {
           x: startX + (index % cols) * gapX,
-          // ENHANCED: Position racks to align with expanded cold aisle (150-430)
+          // ENHANCED: Position racks to align with expanded cold aisle (200-500)
           // Row A (front): positioned at top of cold aisle area
-          // Row B (back): positioned at bottom of cold aisle area
-          y: index < cols ? 160 : 380
+          // Row B (back): positioned at bottom of cold aisle area with increased spacing
+          // Adjust back row slightly up to create symmetric margins with bottom hot zone
+          y: index < cols ? 160 : 540
         },
         side: index < cols ? 'front' : 'back'
       }));
@@ -681,10 +684,11 @@ function ProfessionalDataCenterMonitoring() {
           ...rack,
           position: {
             x: startX + col * gapX,
-            // ENHANCED: Position racks to align with expanded cold aisle (150-430)
+            // ENHANCED: Position racks to align with expanded cold aisle (200-500)
             // Row A (front): positioned at top of cold aisle area
-            // Row B (back): positioned at bottom of cold aisle area
-            y: row === 0 ? 160 : 380,
+            // Row B (back): positioned at bottom of cold aisle area with increased spacing
+            // Adjust back row slightly up to create symmetric margins with bottom hot zone
+            y: row === 0 ? 160 : 540,
           },
           side: row === 0 ? 'front' : 'back',
         };
@@ -710,7 +714,29 @@ function ProfessionalDataCenterMonitoring() {
     setSelectedRack(selectedRack === rackId ? null : rackId);
   };
 
-  const renderEnhancedDataCenterView = (racks, title, site, svgWidth = "100%", svgHeight = "650") => (
+  const renderEnhancedDataCenterView = (racks, title, site, svgWidth = "100%", svgHeight = "650") => {
+    // Unified geometry constants (all gaps = 20px) for perfect symmetry
+    const MARGIN = 20;           // uniform gap
+    const HOT_HEIGHT = 60;       // hot exhaust bar height
+    const RACK_HEIGHT = 100 * 2; // rect height 100 with scaleY 2.00
+    const FRONT_ROW_TOP = 160;   // rack group translate Y for front row
+    const BACK_ROW_TOP = 540;    // rack group translate Y for back row
+    const FRONT_ROW_BOTTOM = FRONT_ROW_TOP + RACK_HEIGHT; // 360
+    const BACK_ROW_BOTTOM = BACK_ROW_TOP + RACK_HEIGHT;   // 740
+
+    // Cold aisle spans both rows with equal padding MARGIN top/bottom relative to racks
+    const COLD_TOP = FRONT_ROW_TOP - MARGIN;              // 140
+    const COLD_BOTTOM = BACK_ROW_BOTTOM + MARGIN;         // 760
+    const COLD_HEIGHT = COLD_BOTTOM - COLD_TOP;           // 620
+    const COLD_CENTER = (COLD_TOP + COLD_BOTTOM) / 2;     // 450
+
+    // Hot exhaust bars placed outside cold aisle with equal gaps
+    const HOT_TOP = COLD_TOP - MARGIN - HOT_HEIGHT;       // 60
+    const HOT_BOTTOM = COLD_BOTTOM + MARGIN;              // 780
+    const HOT_TOP_CENTER = HOT_TOP + HOT_HEIGHT / 2;      // 90
+    const HOT_BOTTOM_CENTER = HOT_BOTTOM + HOT_HEIGHT / 2;// 810
+
+    return (
     <div style={{
       background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
       borderRadius: '16px',
@@ -749,7 +775,8 @@ function ProfessionalDataCenterMonitoring() {
       <svg 
         width={svgWidth} 
         height={svgHeight} 
-        viewBox={`0 0 ${currentView === 'split' ? 1400 : 1500} ${currentView === 'split' ? 600 : 650}`}
+        // Ensure lower hot exhaust and racks are fully visible with consistent margins
+        viewBox={`0 0 ${currentView === 'split' ? 1400 : 1500} ${currentView === 'split' ? 900 : 900}`}
         style={{
           background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
           display: 'block'
@@ -787,56 +814,52 @@ function ProfessionalDataCenterMonitoring() {
         
         
         
-        {/* Cold Aisle - Center (Cold air supply from AC units) - ENHANCED SIZE */}
-        <rect x="40" y="150" width="1320" height="280" 
+        {/* Cold Aisle - Center (Expanded to fully wrap both rows with equal 20px margins) */}
+        <rect x="40" y={COLD_TOP} width="1320" height={COLD_HEIGHT} 
               fill={`url(#modernColdZone-${site})`} 
               stroke="#0ea5e9" 
               strokeWidth="6" 
               rx="18" />
-        <text x="700" y="290" textAnchor="middle" fontSize="18" 
+        {/* Centered label for cold aisle */}
+        <text x="700" y={COLD_CENTER} textAnchor="middle" fontSize="18" 
               fill="#0369a1" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="700">
           ❄️ COLD AISLE - ทางเดินลมเย็น (18°C)
         </text>
         
         {/* Cold Air Distribution Lines */}
-        <line x1="40" y1="290" x2="1360" y2="290" 
+        <line x1="40" y1={COLD_CENTER} x2="1360" y2={COLD_CENTER} 
               stroke="#0ea5e9" strokeWidth="3" strokeDasharray="10,5" opacity="0.6"/>
-        <text x="700" y="305" textAnchor="middle" fontSize="12" 
+        <text x="700" y={COLD_CENTER + 15} textAnchor="middle" fontSize="12" 
               fill="#0369a1" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="500">
           Cold Air Distribution Line
         </text>
         
 
         {/* Hot Air Exhaust Zones - Behind Server Rows - ENHANCED SIZE & EQUAL SPACING */}
-        {/* Front Row Hot Exhaust - INCREASED SIZE */}
-        <rect x="40" y="15" width="1320" height="60" 
+        {/* Front Row Hot Exhaust - placed above cold aisle with equal gap */}
+        <rect x="40" y={HOT_TOP} width="1320" height={HOT_HEIGHT} 
               fill={`url(#modernHotZone-${site})`} 
               stroke="#dc2626" 
               strokeWidth="4" 
               rx="12" />
-        <text x="700" y="35" textAnchor="middle" fontSize="14" 
-              fill="#dc2626" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="600">
-          🔥 HOT EXHAUST - อากาศร้อนออก (35°C) - Row A
-        </text>
-        <text x="700" y="55" textAnchor="middle" fontSize="12" 
-              fill="#dc2626" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="400">
-          พื้นที่ระบายความร้อนขนาด 60px
-        </text>
+        {/* Row A hot label pill */}
+        <g transform={`translate(652, ${HOT_TOP + HOT_HEIGHT/2 - 9})`}>
+          <rect width="96" height="18" rx="9" fill="rgba(239,68,68,0.85)" stroke="#fecaca" strokeWidth="1"/>
+          <text x="48" y="12" textAnchor="middle" fontSize="11" fill="#ffffff" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="700">🔥 35°C • Row A</text>
+        </g>
 
-        {/* Back Row Hot Exhaust - INCREASED SIZE & EQUAL TO FRONT */}
-        <rect x="40" y="470" width="1320" height="60" 
+        {/* Back Row Hot Exhaust - MOVED TO BOTTOM OF ROW B */}
+        {/* Bottom hot exhaust placed after the cold aisle (gap 20px for balance) */}
+        <rect x="40" y={HOT_BOTTOM} width="1320" height={HOT_HEIGHT} 
               fill={`url(#modernHotZone-${site})`} 
               stroke="#dc2626" 
               strokeWidth="4" 
               rx="12" />
-        <text x="700" y="490" textAnchor="middle" fontSize="14" 
-              fill="#dc2626" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="600">
-          🔥 HOT EXHAUST - อากาศร้อนออก (35°C) - Row B
-        </text>
-        <text x="700" y="510" textAnchor="middle" fontSize="12" 
-              fill="#dc2626" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="400">
-          พื้นที่ระบายความร้อนขนาด 60px
-        </text>
+        {/* Row B hot label pill */}
+        <g transform={`translate(652, ${HOT_BOTTOM + HOT_HEIGHT/2 - 9})`}>
+          <rect width="96" height="18" rx="9" fill="rgba(239,68,68,0.85)" stroke="#fecaca" strokeWidth="1"/>
+          <text x="48" y="12" textAnchor="middle" fontSize="11" fill="#ffffff" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="700">🔥 35°C • Row B</text>
+        </g>
 
         {/* Correct Data Center Airflow Physics */}
         {racks.map((rack, index) => (
@@ -846,8 +869,8 @@ function ProfessionalDataCenterMonitoring() {
               <g>
                 {/* Cold air distribution to center cold aisle */}
                 <ModernAirflowEffect
-                  start={{x: rack.position.x + 62, y: rack.side === 'front' ? 180 : 350}}
-                  end={{x: rack.position.x + 62, y: 270}}
+                  start={{x: rack.position.x + 62, y: rack.side === 'front' ? 180 : 570}}
+                  end={{x: rack.position.x + 62, y: COLD_CENTER}}
                   type="cold"
                   intensity="high"
                   direction="vertical"
@@ -856,7 +879,7 @@ function ProfessionalDataCenterMonitoring() {
                 {/* Enhanced cooling effect visualization */}
                 <circle
                   cx={rack.position.x + 62}
-                  cy={270}
+                  cy={COLD_CENTER}
                   r="40"
                   fill="none"
                   stroke="#0ea5e9"
@@ -885,7 +908,7 @@ function ProfessionalDataCenterMonitoring() {
               <g>
                 {/* Cold air intake from center aisle (front of server) */}
                 <ModernAirflowEffect
-                  start={{x: rack.position.x + 62, y: 270}}
+                  start={{x: rack.position.x + 62, y: COLD_CENTER}}
                   end={{x: rack.position.x + 62, y: rack.position.y + 52}}
                   type="cold"
                   intensity="normal"
@@ -895,7 +918,7 @@ function ProfessionalDataCenterMonitoring() {
                 {/* Hot air exhaust to rear (back of server) */}
                 <ModernAirflowEffect
                   start={{x: rack.position.x + 62, y: rack.position.y + 42}}
-                  end={{x: rack.position.x + 62, y: rack.side === 'front' ? 40 : 490}}
+                  end={{x: rack.position.x + 62, y: rack.side === 'front' ? HOT_TOP_CENTER : HOT_BOTTOM_CENTER}}
                   type="hot"
                   intensity="normal"
                   direction="vertical"
@@ -904,7 +927,7 @@ function ProfessionalDataCenterMonitoring() {
                 {/* Server intake indicator */}
                 <circle
                   cx={rack.position.x + 62}
-                  cy={270}
+                  cy={COLD_CENTER}
                   r="8"
                   fill="none"
                   stroke="#0ea5e9"
@@ -919,23 +942,7 @@ function ProfessionalDataCenterMonitoring() {
                   />
                 </circle>
                 
-                {/* Server exhaust indicator */}
-                <circle
-                  cx={rack.position.x + 62}
-                  cy={rack.side === 'front' ? 40 : 490}
-                  r="10"
-                  fill="none"
-                  stroke="#ef4444"
-                  strokeWidth="2"
-                  opacity="0.6"
-                >
-                  <animate
-                    attributeName="r"
-                    values="8;15;8"
-                    dur="2.5s"
-                    repeatCount="indefinite"
-                  />
-                </circle>
+                {/* Removed red exhaust circle indicators for a cleaner professional look */}
               </g>
             )}
           </g>
@@ -979,8 +986,7 @@ function ProfessionalDataCenterMonitoring() {
           </g>
         )}
         
-        {/* ENHANCED: Air Flow Direction Arrows */}
-        {/* Cold Air Flow Arrows - From AC units to cold aisle */}
+        {/* ENHANCED: Air Flow Direction Arrows - REMOVED: เอาเส้นประและหัวลูกศรสีแดงและสีฟ้าออก */}
         <defs>
           {/* Cold air flow marker */}
           <marker id={`coldFlowArrow-${site}`} markerWidth="10" markerHeight="7" 
@@ -995,7 +1001,8 @@ function ProfessionalDataCenterMonitoring() {
           </marker>
         </defs>
         
-        {/* Cold Air Flow Arrows - AC units to cold aisle */}
+        {/* Cold Air Flow Arrows - AC units to cold aisle - REMOVED */}
+        {/* 
         <line x1="200" y1="50" x2="350" y2="200" 
               stroke="#0ea5e9" strokeWidth="3" 
               markerEnd={`url(#coldFlowArrow-${site})`} 
@@ -1008,8 +1015,10 @@ function ProfessionalDataCenterMonitoring() {
               opacity="0.7">
           <animate attributeName="stroke-dasharray" values="0 20;20 0" dur="2s" repeatCount="indefinite"/>
         </line>
+        */}
         
-        {/* Hot Air Flow Arrows - From servers to exhaust zones */}
+        {/* Hot Air Flow Arrows - From servers to exhaust zones - REMOVED */}
+        {/* 
         <line x1="350" y1="300" x2="200" y2="80" 
               stroke="#ef4444" strokeWidth="3" 
               markerEnd={`url(#hotFlowArrow-${site})`} 
@@ -1035,10 +1044,11 @@ function ProfessionalDataCenterMonitoring() {
               opacity="0.7">
           <animate attributeName="stroke-dasharray" values="0 15;15 0" dur="1.5s" repeatCount="indefinite"/>
         </line>
+        */}
         
         {/* ENHANCED: Temperature Indicators for Different Zones */}
         {/* Cold Aisle Temperature */}
-        <g transform="translate(700, 250)">
+        <g transform="translate(700, 330)">
           <rect width="120" height="30" fill="rgba(14, 165, 233, 0.9)" 
                 stroke="#0ea5e9" strokeWidth="2" rx="15"/>
           <text x="60" y="20" textAnchor="middle" fontSize="12" 
@@ -1048,7 +1058,7 @@ function ProfessionalDataCenterMonitoring() {
         </g>
         
         {/* Hot Exhaust Temperature - Row A */}
-        <g transform="translate(700, 45)">
+        <g transform="translate(700, 105)">
           <rect width="120" height="30" fill="rgba(239, 68, 68, 0.9)" 
                 stroke="#ef4444" strokeWidth="2" rx="15"/>
           <text x="60" y="20" textAnchor="middle" fontSize="12" 
@@ -1058,7 +1068,7 @@ function ProfessionalDataCenterMonitoring() {
         </g>
         
         {/* Hot Exhaust Temperature - Row B */}
-        <g transform="translate(700, 495)">
+        <g transform="translate(700, 635)">
           <rect width="120" height="30" fill="rgba(239, 68, 68, 0.9)" 
                 stroke="#ef4444" strokeWidth="2" rx="15"/>
           <text x="60" y="20" textAnchor="middle" fontSize="12" 
@@ -1068,7 +1078,8 @@ function ProfessionalDataCenterMonitoring() {
         </g>
       </svg>
     </div>
-  );
+    );
+  };
 
   return (
     <div style={{
@@ -1248,17 +1259,17 @@ function ProfessionalDataCenterMonitoring() {
               gridTemplateColumns: '1fr 1fr',
               gap: '32px'
             }}>
-              {renderEnhancedDataCenterView(dcRacks, "Data Center (DC)", "DC", "100%", "600")}
-              {renderEnhancedDataCenterView(drRacks, "Disaster Recovery (DR)", "DR", "100%", "600")}
+              {renderEnhancedDataCenterView(dcRacks, "Data Center (DC)", "DC", "100%", "900")}
+              {renderEnhancedDataCenterView(drRacks, "Disaster Recovery (DR)", "DR", "100%", "900")}
             </div>
           )}
 
           {currentView === 'dc-full' && (
-            renderEnhancedDataCenterView(dcRacks, "Primary Data Center (DC) - มุมมองแบบเต็ม", "DC", "100%", "680")
+            renderEnhancedDataCenterView(dcRacks, "Primary Data Center (DC) - มุมมองแบบเต็ม", "DC", "100%", "900")
           )}
 
           {currentView === 'dr-full' && (
-            renderEnhancedDataCenterView(drRacks, "Disaster Recovery (DR) - มุมมองแบบเต็ม", "DR", "100%", "680")
+            renderEnhancedDataCenterView(drRacks, "Disaster Recovery (DR) - มุมมองแบบเต็ม", "DR", "100%", "900")
           )}
         </div>
 

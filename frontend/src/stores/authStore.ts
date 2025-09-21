@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import axios from 'axios'
 
 interface User {
   id: number
@@ -13,7 +14,8 @@ interface AuthState {
   user: User | null
   token: string | null
   isAuthenticated: boolean
-  login: (token: string, user: User) => void
+  isLoading: boolean
+  login: (username: string, password: string) => Promise<void>
   logout: () => void
   updateUser: (user: User) => void
 }
@@ -24,16 +26,39 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      isLoading: false,
       
-      login: (token: string, user: User) => {
-        // Also save token to localStorage for direct access
-        localStorage.setItem("token", token);
+      login: async (username: string, password: string) => {
+        set({ isLoading: true });
         
-        set({
-          token,
-          user,
-          isAuthenticated: true,
-        })
+        try {
+          const formData = new FormData();
+          formData.append('username', username);
+          formData.append('password', password);
+          
+          const response = await axios.post('/ecc800/api/auth/login', formData, {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          });
+          
+          const { access_token, user } = response.data;
+          
+          // Store token in localStorage
+          localStorage.setItem('token', access_token);
+          
+          // Update store
+          set({
+            token: access_token,
+            user: user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+          
+        } catch (error) {
+          set({ isLoading: false });
+          throw error;
+        }
       },
       
       logout: () => {
@@ -47,8 +72,8 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
         })
         
-        // Redirect to login page
-        window.location.href = "/ecc800/login";
+        // Redirect to login page - use /ecc800/ as root, not /ecc800/login
+        window.location.href = "/ecc800/";
       },
       
       updateUser: (user: User) => {

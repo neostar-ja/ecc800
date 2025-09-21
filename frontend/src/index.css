@@ -1,31 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@100;200;300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@100;200;300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   * {
-    @apply border-gray-300;
+    @apply border-gray-300 transition-colors duration-300 ease-in-out;
   }
   
   body {
-    @apply bg-white text-gray-900;
+    @apply bg-white text-gray-900 font-ibm-flex;
+    font-family: 'IBM Plex Sans', 'IBM Plex Sans Thai', system-ui, sans-serif;
+  }
+  
+  html {
+    scroll-behavior: smooth;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700;
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-300;
   }
   
   .btn-primary {
-    @apply bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors;
+    @apply bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl;
   }
   
   .btn-secondary {
-    @apply bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition-colors;
+    @apply bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105;
+  }
+  
+  .glass-card {
+    @apply bg-white/10 dark:bg-black/10 backdrop-blur-lg border border-white/20 dark:border-gray-700/30 rounded-2xl shadow-2xl;
   }
   
   .gradient-bg {
-    @apply bg-gradient-to-br from-blue-500 to-blue-700;
+    @apply bg-gradient-to-br from-primary-500 via-purple-500 to-secondary-500;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent;
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out forwards;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out forwards;
+  }
+  
+  .animate-bounce-soft {
+    animation: bounceSoft 0.6s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .text-shadow-lg {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Custom Keyframes */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px rgba(123, 91, 164, 0.4);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(241, 116, 34, 0.6);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceSoft {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40%, 43% {
+    transform: translateY(-10px);
+  }
+  70% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Dark mode improvements */
+.dark body {
+  @apply bg-gray-900 text-gray-100;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary-400 dark:bg-primary-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary-500 dark:bg-primary-500;
+}
+
+/* Focus styles for accessibility */
+.focus-visible {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900;
+}
+
+/* Loading spinner */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

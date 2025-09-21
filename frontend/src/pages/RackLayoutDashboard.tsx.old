@@ -1,0 +1,3219 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  ButtonGroup,
+  Chip,
+  Divider,
+  useTheme,
+  useMediaQuery,
+  Tooltip,
+  IconButton,
+  Paper,
+} from '@mui/material';
+import {
+  Storage,
+  Memory,
+  Router,
+  AcUnit,
+  BatteryChargingFull,
+  PowerSettingsNew,
+  ZoomIn,
+  ZoomOut,
+  FullscreenExit,
+  ViewStream,
+  ViewComfy,
+  ViewCompact,
+  Refresh,
+  Info
+} from '@mui/icons-material';
+import { Stage, Layer, Rect, Text, Group, Circle, Path, Arrow, Line, Star, RegularPolygon } from 'react-konva';
+import Konva from 'konva';
+import { useCustomTheme } from '../contexts/ThemeProvider';
+import ThaiModernLayout from '../components/ThaiModernLayout';
+
+// Define interfaces for type safety
+interface Position {
+  x: number;
+  y: number;
+}
+
+interface RackData {
+  id: string;
+  label: string;
+  type: string;
+  isActive: boolean;
+  position: Position;
+  side?: string;
+  temperature?: number;
+  cpuUsage?: number;
+}
+
+// Modern RackItem component using Konva
+const ModernRackItem = ({ 
+  rack, 
+  isSelected, 
+  onSelect, 
+  theme 
+}: { 
+  rack: RackData; 
+  isSelected: boolean; 
+  onSelect: (id: string) => void; 
+  theme: 'light' | 'dark';
+}) => {
+  const [hovered, setHovered] = useState(false);
+  const scale = 1.3;
+  const width = 130;
+  const height = 180;
+  
+  // Gradient colors based on rack type and state
+  const getColors = () => {
+    const baseColors: any = {
+      server: {
+        primary: theme === 'dark' ? '#374151' : '#4B5563',
+        secondary: theme === 'dark' ? '#1F2937' : '#374151',
+        accent: theme === 'dark' ? '#6B7280' : '#9CA3AF'
+      },
+      network: {
+        primary: theme === 'dark' ? '#1D4ED8' : '#2563EB',
+        secondary: theme === 'dark' ? '#1E40AF' : '#1D4ED8',
+        accent: theme === 'dark' ? '#3B82F6' : '#60A5FA'
+      },
+      aircon: {
+        primary: theme === 'dark' ? '#059669' : '#10B981',
+        secondary: theme === 'dark' ? '#047857' : '#059669',
+        accent: theme === 'dark' ? '#34D399' : '#6EE7B7'
+      },
+      battery: {
+        primary: theme === 'dark' ? '#D97706' : '#F59E0B',
+        secondary: theme === 'dark' ? '#B45309' : '#D97706',
+        accent: theme === 'dark' ? '#FBBF24' : '#FCD34D'
+      },
+      ups: {
+        primary: theme === 'dark' ? '#7C3AED' : '#8B5CF6',
+        secondary: theme === 'dark' ? '#6D28D9' : '#7C3AED',
+        accent: theme === 'dark' ? '#A78BFA' : '#C4B5FD'
+      }
+    };
+    
+    return baseColors[rack.type] || baseColors.server;
+  };
+  
+  const colors = getColors();
+  
+  // Determine status color
+  const getStatusColor = () => {
+    if (!rack.isActive) return '#EF4444';
+    if (rack.type === 'server' && rack.cpuUsage && rack.cpuUsage > 80) return '#F59E0B';
+    if (rack.type === 'server' && rack.temperature && rack.temperature > 30) return '#F59E0B';
+    return '#10B981';
+  };
+  
+  // Get icon based on rack type
+  const getIcon = () => {
+    switch (rack.type) {
+      case 'network':
+        return (
+          <Group>
+            {/* Network icon */}
+            <Circle radius={12} fill={colors.accent} opacity={0.2} />
+            <Circle radius={12} stroke={colors.accent} strokeWidth={1.5} />
+            <Line
+              points={[0, -8, 0, 8]}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Line
+              points={[-8, 0, 8, 0]}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Path
+              data="M -6,-6 C -2,-2 2,-2 6,-6 M -6,6 C -2,2 2,2 6,6"
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+          </Group>
+        );
+      case 'aircon':
+        return (
+          <Group>
+            {/* AC icon */}
+            <Circle radius={12} fill={colors.accent} opacity={0.2} />
+            <RegularPolygon
+              sides={6}
+              radius={10}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Arrow
+              points={[0, -12, 0, 12]}
+              pointerLength={3}
+              pointerWidth={3}
+              fill={colors.accent}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Arrow
+              points={[-12, 0, 12, 0]}
+              pointerLength={3}
+              pointerWidth={3}
+              fill={colors.accent}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+          </Group>
+        );
+      case 'battery':
+        return (
+          <Group>
+            {/* Battery icon */}
+            <Rect
+              width={20}
+              height={15}
+              cornerRadius={2}
+              fill={colors.accent}
+              opacity={0.2}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Rect
+              x={20}
+              y={4}
+              width={4}
+              height={7}
+              cornerRadius={1}
+              fill={colors.accent}
+            />
+            <Rect
+              x={3}
+              y={3}
+              width={14}
+              height={9}
+              cornerRadius={1}
+              fill={colors.accent}
+              opacity={0.6}
+            />
+          </Group>
+        );
+      case 'ups':
+        return (
+          <Group>
+            {/* UPS icon */}
+            <Star
+              numPoints={5}
+              innerRadius={7}
+              outerRadius={12}
+              fill={colors.accent}
+              opacity={0.6}
+            />
+            <Path
+              data="M 0,-10 L -3,0 L 3,0 L 0,10"
+              stroke={colors.accent}
+              strokeWidth={2}
+              fill={colors.accent}
+              opacity={0.8}
+            />
+          </Group>
+        );
+      default:
+        return (
+          <Group>
+            {/* Server icon */}
+            <Rect
+              width={24}
+              height={18}
+              x={-12}
+              y={-9}
+              cornerRadius={2}
+              fill={colors.accent}
+              opacity={0.2}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Rect
+              width={20}
+              height={2}
+              x={-10}
+              y={-6}
+              fill={colors.accent}
+            />
+            <Rect
+              width={20}
+              height={2}
+              x={-10}
+              y={-2}
+              fill={colors.accent}
+            />
+            <Rect
+              width={20}
+              height={2}
+              x={-10}
+              y={2}
+              fill={colors.accent}
+            />
+            <Rect
+              width={20}
+              height={2}
+              x={-10}
+              y={6}
+              fill={colors.accent}
+            />
+          </Group>
+        );
+    }
+  };
+  
+  // Get metric displays
+  const getMetrics = () => {
+    const items = [];
+    
+    if (rack.temperature) {
+      items.push({
+        label: `${rack.temperature}°C`,
+        color: rack.temperature > 28 ? '#EF4444' : 
+               rack.temperature > 25 ? '#F59E0B' : '#10B981'
+      });
+    }
+    
+    if (rack.type === 'server' && rack.cpuUsage) {
+      items.push({
+        label: `CPU ${rack.cpuUsage}%`,
+        color: rack.cpuUsage > 80 ? '#EF4444' : 
+               rack.cpuUsage > 60 ? '#F59E0B' : '#10B981'
+      });
+    }
+    
+    return (
+      <Group y={30}>
+        {items.map((item, index) => (
+          <Group key={index} y={index * 20}>
+            <Rect
+              width={70}
+              height={18}
+              x={-35}
+              cornerRadius={9}
+              fill={item.color}
+              opacity={0.2}
+              stroke={item.color}
+              strokeWidth={1}
+            />
+            <Text
+              text={item.label}
+              fontSize={11}
+              fontFamily="'IBM Plex Sans Thai', system-ui"
+              fontStyle="bold"
+              fill={item.color}
+              align="center"
+              verticalAlign="middle"
+              width={70}
+              height={18}
+              x={-35}
+            />
+          </Group>
+        ))}
+      </Group>
+    );
+  };
+  
+  return (
+    <Group
+      x={rack.position.x}
+      y={rack.position.y}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => onSelect(rack.id)}
+      onTap={() => onSelect(rack.id)}
+    >
+      {/* Main rack body */}
+      <Rect
+        width={width}
+        height={height}
+        x={-width / 2}
+        y={-height / 2}
+        cornerRadius={12}
+        fillLinearGradientStartPoint={{ x: 0, y: 0 }}
+        fillLinearGradientEndPoint={{ x: width, y: height }}
+        fillLinearGradientColorStops={[
+          0, colors.primary,
+          0.5, colors.secondary,
+          1, colors.primary
+        ]}
+        shadowColor="black"
+        shadowBlur={isSelected || hovered ? 20 : 10}
+        shadowOpacity={isSelected || hovered ? 0.5 : 0.3}
+        shadowOffset={{ x: 5, y: 5 }}
+        stroke={isSelected ? colors.accent : colors.secondary}
+        strokeWidth={isSelected || hovered ? 3 : 2}
+      />
+      
+      {/* Glass effect */}
+      <Rect
+        width={width - 16}
+        height={height - 16}
+        x={-width / 2 + 8}
+        y={-height / 2 + 8}
+        cornerRadius={8}
+        fillLinearGradientStartPoint={{ x: 0, y: 0 }}
+        fillLinearGradientEndPoint={{ x: width - 16, y: height - 16 }}
+        fillLinearGradientColorStops={[
+          0, 'rgba(255,255,255,0.1)',
+          0.5, 'rgba(255,255,255,0.05)',
+          1, 'rgba(255,255,255,0.02)'
+        ]}
+        stroke="rgba(255,255,255,0.2)"
+        strokeWidth={1}
+      />
+      
+      {/* Status indicator */}
+      <Circle
+        x={-width / 2 + 16}
+        y={-height / 2 + 16}
+        radius={6}
+        fill={getStatusColor()}
+      />
+      
+      {/* Badge with ID */}
+      <Group x={width / 2 - 20} y={height / 2 - 15}>
+        <Rect
+          width={30}
+          height={20}
+          x={-15}
+          y={-10}
+          cornerRadius={5}
+          fill="rgba(255,255,255,0.1)"
+          stroke="rgba(255,255,255,0.3)"
+          strokeWidth={1}
+        />
+        <Text
+          text={rack.id}
+          fontSize={12}
+          fontFamily="'IBM Plex Sans Thai', monospace"
+          fontStyle="bold"
+          fill="white"
+          align="center"
+          verticalAlign="middle"
+          width={30}
+          height={20}
+          x={-15}
+          y={-10}
+        />
+      </Group>
+      
+      {/* Type icon */}
+      <Group x={-width / 2 + 45} y={-height / 2 + 45}>
+        {getIcon()}
+      </Group>
+      
+      {/* Rack label */}
+      <Text
+        text={rack.label}
+        fontSize={16}
+        fontFamily="'IBM Plex Sans Thai', system-ui"
+        fontStyle="bold"
+        fill="white"
+        align="center"
+        width={width - 20}
+        x={-width / 2 + 10}
+        y={-15}
+      />
+      
+      {/* Metrics */}
+      {getMetrics()}
+      
+      {/* Enhanced glowing effect when selected or hovered */}
+      {(isSelected || hovered) && (
+        <Rect
+          width={width}
+          height={height}
+          x={-width / 2}
+          y={-height / 2}
+          cornerRadius={12}
+          stroke={colors.accent}
+          strokeWidth={2}
+          opacity={0.6}
+          shadowColor={colors.accent}
+          shadowBlur={20}
+          shadowOpacity={0.5}
+        />
+      )}
+    </Group>
+  );
+};
+
+// Data Center View Component using Konva
+const DataCenterView = ({ 
+  racks, 
+  title, 
+  site, 
+  onRackSelect, 
+  selectedRackId,
+  theme
+}: { 
+  racks: RackData[]; 
+  title: string; 
+  site: string; 
+  onRackSelect: (id: string) => void; 
+  selectedRackId: string | null;
+  theme: 'light' | 'dark';
+}) => {
+  const stageRef = useRef<Konva.Stage | null>(null);
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  
+  // Calculate stage dimensions based on rack positions
+  const getDimensions = () => {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    
+    racks.forEach(rack => {
+      minX = Math.min(minX, rack.position.x - 80);
+      maxX = Math.max(maxX, rack.position.x + 80);
+      minY = Math.min(minY, rack.position.y - 100);
+      maxY = Math.max(maxY, rack.position.y + 100);
+    });
+    
+    return {
+      width: maxX - minX + 100,
+      height: maxY - minY + 100
+    };
+  };
+  
+  const dimensions = getDimensions();
+  
+  // Handle zoom in/out
+  const handleZoom = (direction: 'in' | 'out' | 'reset') => {
+    if (direction === 'in') {
+      setScale(prev => Math.min(prev + 0.1, 2));
+    } else if (direction === 'out') {
+      setScale(prev => Math.max(prev - 0.1, 0.5));
+    } else {
+      setScale(1);
+      setPosition({ x: 0, y: 0 });
+    }
+  };
+  
+  // Background colors based on theme
+  const getBgColors = () => {
+    return theme === 'dark' 
+      ? { main: '#1F2937', cold: '#1E40AF', hot: '#B91C1C' }
+      : { main: '#F9FAFB', cold: '#DBEAFE', hot: '#FEE2E2' };
+  };
+  
+  const bgColors = getBgColors();
+  
+  return (
+    <Box sx={{ 
+      width: '100%', 
+      height: '100%', 
+      position: 'relative',
+      bgcolor: theme === 'dark' ? 'background.paper' : 'background.default',
+      borderRadius: 2,
+      overflow: 'hidden',
+      boxShadow: 3
+    }}>
+      {/* Title bar */}
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        p: 2,
+        bgcolor: theme === 'dark' ? 'background.paper' : 'primary.main',
+        color: theme === 'dark' ? 'text.primary' : 'common.white',
+        borderBottom: 1,
+        borderColor: 'divider'
+      }}>
+        <Typography variant="h6" fontWeight="bold">
+          {title}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <IconButton 
+            size="small" 
+            onClick={() => handleZoom('out')}
+            sx={{ color: theme === 'dark' ? 'text.secondary' : 'common.white' }}
+          >
+            <ZoomOut />
+          </IconButton>
+          <IconButton 
+            size="small" 
+            onClick={() => handleZoom('reset')}
+            sx={{ color: theme === 'dark' ? 'text.secondary' : 'common.white' }}
+          >
+            <FullscreenExit />
+          </IconButton>
+          <IconButton 
+            size="small" 
+            onClick={() => handleZoom('in')}
+            sx={{ color: theme === 'dark' ? 'text.secondary' : 'common.white' }}
+          >
+            <ZoomIn />
+          </IconButton>
+        </Box>
+      </Box>
+      
+      {/* Konva stage with racks */}
+      <Box sx={{ 
+        width: '100%', 
+        height: 'calc(100% - 64px)',
+        position: 'relative',
+        overflow: 'hidden',
+        bgcolor: theme === 'dark' ? '#111827' : '#F3F4F6'
+      }}>
+        <Stage
+          ref={stageRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          scaleX={scale}
+          scaleY={scale}
+          x={position.x}
+          y={position.y}
+          draggable
+          onDragEnd={(e) => {
+            setPosition({ x: e.target.x(), y: e.target.y() });
+          }}
+        >
+          <Layer>
+            {/* Background zones */}
+            <Rect
+              width={dimensions.width}
+              height={150}
+              fill={bgColors.hot}
+              opacity={0.2}
+            />
+            <Rect
+              width={dimensions.width}
+              height={400}
+              y={150}
+              fill={bgColors.cold}
+              opacity={0.2}
+            />
+            <Rect
+              width={dimensions.width}
+              height={150}
+              y={550}
+              fill={bgColors.hot}
+              opacity={0.2}
+            />
+            
+            {/* Hot/Cold indicators */}
+            <Group x={700} y={75}>
+              <Rect
+                width={100}
+                height={30}
+                cornerRadius={15}
+                fill="#EF4444"
+                opacity={0.8}
+              />
+              <Text
+                text="🔥 35°C"
+                fontSize={14}
+                fontFamily="'IBM Plex Sans Thai', system-ui"
+                fontStyle="bold"
+                fill="white"
+                align="center"
+                verticalAlign="middle"
+                width={100}
+                height={30}
+              />
+            </Group>
+            
+            <Group x={700} y={350}>
+              <Rect
+                width={100}
+                height={30}
+                cornerRadius={15}
+                fill="#3B82F6"
+                opacity={0.8}
+              />
+              <Text
+                text="❄️ 18°C"
+                fontSize={14}
+                fontFamily="'IBM Plex Sans Thai', system-ui"
+                fontStyle="bold"
+                fill="white"
+                align="center"
+                verticalAlign="middle"
+                width={100}
+                height={30}
+              />
+            </Group>
+            
+            <Group x={700} y={625}>
+              <Rect
+                width={100}
+                height={30}
+                cornerRadius={15}
+                fill="#EF4444"
+                opacity={0.8}
+              />
+              <Text
+                text="🔥 35°C"
+                fontSize={14}
+                fontFamily="'IBM Plex Sans Thai', system-ui"
+                fontStyle="bold"
+                fill="white"
+                align="center"
+                verticalAlign="middle"
+                width={100}
+                height={30}
+              />
+            </Group>
+            
+            {/* Rack items */}
+            {racks.map(rack => (
+              <ModernRackItem
+                key={`${site}-${rack.id}`}
+                rack={rack}
+                isSelected={selectedRackId === rack.id}
+                onSelect={onRackSelect}
+                theme={theme}
+              />
+            ))}
+          </Layer>
+        </Stage>
+      </Box>
+    </Box>
+  );
+};
+
+// Main Rack Layout Dashboard
+const RackLayoutDashboard = () => {
+  const [viewMode, setViewMode] = useState<'split' | 'dc' | 'dr'>('split');
+  const [selectedRack, setSelectedRack] = useState<string | null>(null);
+  const [dcRacks, setDcRacks] = useState<RackData[]>([]);
+  const [drRacks, setDrRacks] = useState<RackData[]>([]);
+  const { isDarkMode } = useCustomTheme();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
+  useEffect(() => {
+    // Load Google Fonts for IBM Plex Sans Thai
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+
+    // DC Configuration with real data structure
+    const dcConfig = [
+      // Row A (Front - facing cold aisle)
+      { id: 'A1', label: 'IT1', type: 'server', isActive: true, temperature: 24, cpuUsage: 45 },
+      { id: 'A2', label: 'IT2', type: 'server', isActive: true, temperature: 23, cpuUsage: 52 },
+      { id: 'A3', label: 'IT3', type: 'server', isActive: true, temperature: 25, cpuUsage: 38 },
+      { id: 'A4', label: 'Air Con3', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'A5', label: 'IT4', type: 'server', isActive: true, temperature: 22, cpuUsage: 67 },
+      { id: 'A6', label: 'IT5', type: 'server', isActive: true, temperature: 26, cpuUsage: 41 },
+      { id: 'A7', label: 'Network1', type: 'network', isActive: true },
+      { id: 'A8', label: 'Network2', type: 'network', isActive: true },
+      
+      // Row B (Back - facing cold aisle)
+      { id: 'B1', label: 'IT6', type: 'server', isActive: true, temperature: 25, cpuUsage: 33 },
+      { id: 'B2', label: 'IT7', type: 'server', isActive: true, temperature: 27, cpuUsage: 58 },
+      { id: 'B3', label: 'Air Con2', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'B4', label: 'IT8', type: 'server', isActive: true, temperature: 24, cpuUsage: 71 },
+      { id: 'B5', label: 'IT9', type: 'server', isActive: true, temperature: 23, cpuUsage: 29 },
+      { id: 'B6', label: 'Air Con1', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'B7', label: 'IT10', type: 'server', isActive: true, temperature: 26, cpuUsage: 44 },
+      { id: 'B8', label: 'Network3', type: 'network', isActive: true },
+    ];
+
+    // DR Configuration
+    const drConfig = [
+      // Row A (Front - 6 items)
+      { id: 'A1', label: 'Network3', type: 'network', isActive: true },
+      { id: 'A2', label: 'IT5', type: 'server', isActive: true, temperature: 24, cpuUsage: 35 },
+      { id: 'A3', label: 'IT4', type: 'server', isActive: true, temperature: 25, cpuUsage: 42 },
+      { id: 'A4', label: 'Air Con2', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'A5', label: 'Battery Cabinet', type: 'battery', isActive: true },
+      { id: 'A6', label: 'UPS Cabinet', type: 'ups', isActive: true },
+
+      // Row B (Back - 6 items)
+      { id: 'B1', label: 'IT3', type: 'server', isActive: true, temperature: 23, cpuUsage: 39 },
+      { id: 'B2', label: 'Air Con1', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'B3', label: 'IT2', type: 'server', isActive: true, temperature: 22, cpuUsage: 48 },
+      { id: 'B4', label: 'Network1', type: 'network', isActive: true },
+      { id: 'B5', label: 'Network2', type: 'network', isActive: true },
+      { id: 'B6', label: 'IT1', type: 'server', isActive: true, temperature: 24, cpuUsage: 55 },
+    ];
+
+    // Position racks function for DC
+    const positionRacks = (config: any[]) => {
+      const cols = 8;
+      const gapX = 170;
+      const rackWidth = 125 * 1.30;
+      const totalWidth = (cols - 1) * gapX + rackWidth;
+      const viewWidth = 1400;
+      const startX = Math.max(20, (viewWidth - totalWidth) / 2);
+      
+      return config.map((rack, index) => ({
+        ...rack,
+        position: {
+          x: startX + (index % cols) * gapX,
+          y: index < cols ? 160 : 540
+        },
+        side: index < cols ? 'front' : 'back'
+      }));
+    };
+
+    // Position racks function for DR
+    const positionRacksDR = (config: any[]) => {
+      const cols = 6;
+      const gapX = 220;
+      const rackWidth = 125 * 1.30;
+      const totalWidth = (cols - 1) * gapX + rackWidth;
+      const viewWidth = 1400;
+      const startX = Math.max(20, (viewWidth - totalWidth) / 2);
+      
+      return config.map((rack, index) => {
+        const col = index % cols;
+        const row = index < cols ? 0 : 1;
+        return {
+          ...rack,
+          position: {
+            x: startX + col * gapX,
+            y: row === 0 ? 160 : 540,
+          },
+          side: row === 0 ? 'front' : 'back',
+        };
+      });
+    };
+
+    setDcRacks(positionRacks(dcConfig));
+    setDrRacks(positionRacksDR(drConfig));
+  }, []);
+
+  const handleRackSelect = (rackId: string) => {
+    setSelectedRack(prevId => prevId === rackId ? null : rackId);
+  };
+  
+  const handleViewChange = (newView: 'split' | 'dc' | 'dr') => {
+    setViewMode(newView);
+    // Reset selection when changing views
+    setSelectedRack(null);
+  };
+  
+  const contentSection = (
+    <>
+      {/* View selection */}
+      <Paper 
+        elevation={2} 
+        sx={{ 
+          p: 2, 
+          borderRadius: 2,
+          mb: 2,
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          justifyContent: 'space-between',
+          gap: 2
+        }}
+      >
+        <Typography variant="h6">เลือกมุมมอง:</Typography>
+        
+        <ButtonGroup variant="contained" color="primary">
+          <Button 
+            variant={viewMode === 'split' ? 'contained' : 'outlined'}
+            onClick={() => handleViewChange('split')}
+            startIcon={<ViewStream />}
+          >
+            DC + DR
+          </Button>
+          <Button 
+            variant={viewMode === 'dc' ? 'contained' : 'outlined'}
+            onClick={() => handleViewChange('dc')}
+            startIcon={<ViewComfy />}
+          >
+            Data Center (DC)
+          </Button>
+          <Button 
+            variant={viewMode === 'dr' ? 'contained' : 'outlined'}
+            onClick={() => handleViewChange('dr')}
+            startIcon={<ViewCompact />}
+          >
+            Disaster Recovery (DR)
+          </Button>
+        </ButtonGroup>
+      </Paper>
+      
+      {/* Selected rack details */}
+      {selectedRack && (
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            mb: 2,
+            border: 1,
+            borderColor: 'primary.main',
+            bgcolor: isDarkMode ? 'background.paper' : 'rgba(25, 118, 210, 0.05)'
+          }}
+        >
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              color: 'primary.main',
+              mb: 2
+            }}
+          >
+            <Info />
+            รายละเอียดตู้ที่เลือก
+          </Typography>
+          
+          <Divider sx={{ mb: 2 }} />
+          
+          {(() => {
+            const dcRack = dcRacks.find(r => r.id === selectedRack);
+            const drRack = drRacks.find(r => r.id === selectedRack);
+            const rack = dcRack || drRack;
+            const site = dcRack ? 'Data Center (DC)' : 'Disaster Recovery (DR)';
+            
+            return rack ? (
+              <Box sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: 3,
+                '& > div': {
+                  minWidth: { xs: '100%', sm: '45%', md: '30%' },
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0.5
+                }
+              }}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">ศูนย์ข้อมูล / Site</Typography>
+                  <Typography variant="body1" fontWeight="medium">{site}</Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">รหัส / ID</Typography>
+                  <Typography variant="body1" fontWeight="medium">{rack.id}</Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">ชื่อ / Label</Typography>
+                  <Typography variant="body1" fontWeight="medium">{rack.label}</Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">ประเภท / Type</Typography>
+                  <Chip 
+                    label={rack.type} 
+                    color={
+                      rack.type === 'server' ? 'default' :
+                      rack.type === 'network' ? 'primary' :
+                      rack.type === 'aircon' ? 'success' :
+                      rack.type === 'battery' ? 'warning' : 'secondary'
+                    }
+                    size="small"
+                    sx={{ fontWeight: 'medium' }}
+                    icon={
+                      rack.type === 'server' ? <Memory /> :
+                      rack.type === 'network' ? <Router /> :
+                      rack.type === 'aircon' ? <AcUnit /> :
+                      rack.type === 'battery' ? <BatteryChargingFull /> : <PowerSettingsNew />
+                    }
+                  />
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">สถานะ / Status</Typography>
+                  <Chip 
+                    label={rack.isActive ? "ทำงานปกติ" : "ไม่ทำงาน"} 
+                    color={rack.isActive ? "success" : "error"}
+                    size="small"
+                    sx={{ fontWeight: 'medium' }}
+                  />
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">ตำแหน่ง / Position</Typography>
+                  <Typography variant="body1" fontWeight="medium">
+                    {rack.id.startsWith('A') ? 'แถวหน้า (Front Row)' : 'แถวหลัง (Back Row)'}
+                  </Typography>
+                </Box>
+                
+                {rack.temperature && (
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">อุณหภูมิ / Temperature</Typography>
+                    <Typography 
+                      variant="body1" 
+                      fontWeight="medium"
+                      color={
+                        rack.temperature > 28 ? 'error.main' :
+                        rack.temperature > 25 ? 'warning.main' : 'success.main'
+                      }
+                    >
+                      {rack.temperature}°C
+                    </Typography>
+                  </Box>
+                )}
+                
+                {rack.cpuUsage && (
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">การใช้งาน CPU / CPU Usage</Typography>
+                    <Typography 
+                      variant="body1" 
+                      fontWeight="medium"
+                      color={
+                        rack.cpuUsage > 80 ? 'error.main' :
+                        rack.cpuUsage > 60 ? 'warning.main' : 'success.main'
+                      }
+                    >
+                      {rack.cpuUsage}%
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            ) : null;
+          })()}
+        </Paper>
+      )}
+      
+      {/* Main content */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: viewMode === 'split' ? 'row' : 'column' },
+        gap: 2,
+        flex: 1,
+        height: viewMode === 'split' ? { xs: '140vh', md: '80vh' } : '80vh'
+      }}>
+        {(viewMode === 'split' || viewMode === 'dc') && (
+          <Box sx={{ 
+            flex: 1, 
+            height: viewMode === 'split' ? '100%' : '100%',
+            minHeight: { xs: '500px', md: viewMode === 'split' ? '100%' : '700px' }
+          }}>
+            <DataCenterView
+              racks={dcRacks}
+              title="Data Center (DC)"
+              site="DC"
+              onRackSelect={handleRackSelect}
+              selectedRackId={selectedRack}
+              theme={isDarkMode ? 'dark' : 'light'}
+            />
+          </Box>
+        )}
+        
+        {(viewMode === 'split' || viewMode === 'dr') && (
+          <Box sx={{ 
+            flex: 1, 
+            height: viewMode === 'split' ? '100%' : '100%',
+            minHeight: { xs: '500px', md: viewMode === 'split' ? '100%' : '700px' }
+          }}>
+            <DataCenterView
+              racks={drRacks}
+              title="Disaster Recovery (DR)"
+              site="DR"
+              onRackSelect={handleRackSelect}
+              selectedRackId={selectedRack}
+              theme={isDarkMode ? 'dark' : 'light'}
+            />
+          </Box>
+        )}
+      </Box>
+    </>
+  );
+  
+  return (
+    <ThaiModernLayout>
+      <Box sx={{ 
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        width: '100%'
+      }}>
+        {/* Page header */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 2,
+          mb: 2
+        }}>
+          <Typography 
+            variant="h4" 
+            fontWeight="bold"
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              color: isDarkMode ? 'text.primary' : 'primary.main'
+            }}
+          >
+            <Storage sx={{ fontSize: 36 }} />
+            ตำแหน่งตู้เครือข่าย
+          </Typography>
+          
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title="รีเฟรช" arrow>
+              <IconButton 
+                color="primary"
+                onClick={() => window.location.reload()}
+              >
+                <Refresh />
+              </IconButton>
+            </Tooltip>
+            
+            <Tooltip title="ข้อมูลเพิ่มเติม" arrow>
+              <IconButton 
+                color="primary"
+                onClick={() => console.log('Show info')}
+              >
+                <Info />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+        
+        {contentSection}
+      </Box>
+    </ThaiModernLayout>
+  );
+};
+
+export default RackLayoutDashboard;
+    
+    return baseColors[rack.type] || baseColors.server;
+  };
+  
+  const colors = getColors();
+  
+  // Determine status color
+  const getStatusColor = () => {
+    if (!rack.isActive) return '#EF4444';
+    if (rack.type === 'server' && rack.cpuUsage && rack.cpuUsage > 80) return '#F59E0B';
+    if (rack.type === 'server' && rack.temperature && rack.temperature > 30) return '#F59E0B';
+    return '#10B981';
+  };
+  
+  // Get icon based on rack type
+  const getIcon = () => {
+    switch (rack.type) {
+      case 'network':
+        return (
+          <Group>
+            {/* Network icon */}
+            <Circle radius={12} fill={colors.accent} opacity={0.2} />
+            <Circle radius={12} stroke={colors.accent} strokeWidth={1.5} />
+            <Line
+              points={[0, -8, 0, 8]}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Line
+              points={[-8, 0, 8, 0]}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Path
+              data="M -6,-6 C -2,-2 2,-2 6,-6 M -6,6 C -2,2 2,2 6,6"
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+          </Group>
+        );
+      case 'aircon':
+        return (
+          <Group>
+            {/* AC icon */}
+            <Circle radius={12} fill={colors.accent} opacity={0.2} />
+            <RegularPolygon
+              sides={6}
+              radius={10}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Arrow
+              points={[0, -12, 0, 12]}
+              pointerLength={3}
+              pointerWidth={3}
+              fill={colors.accent}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Arrow
+              points={[-12, 0, 12, 0]}
+              pointerLength={3}
+              pointerWidth={3}
+              fill={colors.accent}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+          </Group>
+        );
+      case 'battery':
+        return (
+          <Group>
+            {/* Battery icon */}
+            <Rect
+              width={20}
+              height={15}
+              cornerRadius={2}
+              fill={colors.accent}
+              opacity={0.2}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Rect
+              x={20}
+              y={4}
+              width={4}
+              height={7}
+              cornerRadius={1}
+              fill={colors.accent}
+            />
+            <Rect
+              x={3}
+              y={3}
+              width={14}
+              height={9}
+              cornerRadius={1}
+              fill={colors.accent}
+              opacity={0.6}
+            />
+          </Group>
+        );
+      case 'ups':
+        return (
+          <Group>
+            {/* UPS icon */}
+            <Star
+              numPoints={5}
+              innerRadius={7}
+              outerRadius={12}
+              fill={colors.accent}
+              opacity={0.6}
+            />
+            <Path
+              data="M 0,-10 L -3,0 L 3,0 L 0,10"
+              stroke={colors.accent}
+              strokeWidth={2}
+              fill={colors.accent}
+              opacity={0.8}
+            />
+          </Group>
+        );
+      default:
+        return (
+          <Group>
+            {/* Server icon */}
+            <Rect
+              width={24}
+              height={18}
+              x={-12}
+              y={-9}
+              cornerRadius={2}
+              fill={colors.accent}
+              opacity={0.2}
+              stroke={colors.accent}
+              strokeWidth={1.5}
+            />
+            <Rect
+              width={20}
+              height={2}
+              x={-10}
+              y={-6}
+              fill={colors.accent}
+            />
+            <Rect
+              width={20}
+              height={2}
+              x={-10}
+              y={-2}
+              fill={colors.accent}
+            />
+            <Rect
+              width={20}
+              height={2}
+              x={-10}
+              y={2}
+              fill={colors.accent}
+            />
+            <Rect
+              width={20}
+              height={2}
+              x={-10}
+              y={6}
+              fill={colors.accent}
+            />
+          </Group>
+        );
+    }
+  };
+  
+  // Get metric displays
+  const getMetrics = () => {
+    const items = [];
+    
+    if (rack.temperature) {
+      items.push({
+        label: `${rack.temperature}°C`,
+        color: rack.temperature > 28 ? '#EF4444' : 
+               rack.temperature > 25 ? '#F59E0B' : '#10B981'
+      });
+    }
+    
+    if (rack.type === 'server' && rack.cpuUsage) {
+      items.push({
+        label: `CPU ${rack.cpuUsage}%`,
+        color: rack.cpuUsage > 80 ? '#EF4444' : 
+               rack.cpuUsage > 60 ? '#F59E0B' : '#10B981'
+      });
+    }
+    
+    return (
+      <Group y={30}>
+        {items.map((item, index) => (
+          <Group key={index} y={index * 20}>
+            <Rect
+              width={70}
+              height={18}
+              x={-35}
+              cornerRadius={9}
+              fill={item.color}
+              opacity={0.2}
+              stroke={item.color}
+              strokeWidth={1}
+            />
+            <Text
+              text={item.label}
+              fontSize={11}
+              fontFamily="'IBM Plex Sans Thai', system-ui"
+              fontStyle="bold"
+              fill={item.color}
+              align="center"
+              verticalAlign="middle"
+              width={70}
+              height={18}
+              x={-35}
+            />
+          </Group>
+        ))}
+      </Group>
+    );
+  };
+  
+  return (
+    <Group
+      x={rack.position.x}
+      y={rack.position.y}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => onSelect(rack.id)}
+      onTap={() => onSelect(rack.id)}
+    >
+      {/* Main rack body */}
+      <Rect
+        width={width}
+        height={height}
+        x={-width / 2}
+        y={-height / 2}
+        cornerRadius={12}
+        fillLinearGradientStartPoint={{ x: 0, y: 0 }}
+        fillLinearGradientEndPoint={{ x: width, y: height }}
+        fillLinearGradientColorStops={[
+          0, colors.primary,
+          0.5, colors.secondary,
+          1, colors.primary
+        ]}
+        shadowColor="black"
+        shadowBlur={isSelected || hovered ? 20 : 10}
+        shadowOpacity={isSelected || hovered ? 0.5 : 0.3}
+        shadowOffset={{ x: 5, y: 5 }}
+        stroke={isSelected ? colors.accent : colors.secondary}
+        strokeWidth={isSelected || hovered ? 3 : 2}
+      />
+      
+      {/* Glass effect */}
+      <Rect
+        width={width - 16}
+        height={height - 16}
+        x={-width / 2 + 8}
+        y={-height / 2 + 8}
+        cornerRadius={8}
+        fillLinearGradientStartPoint={{ x: 0, y: 0 }}
+        fillLinearGradientEndPoint={{ x: width - 16, y: height - 16 }}
+        fillLinearGradientColorStops={[
+          0, 'rgba(255,255,255,0.1)',
+          0.5, 'rgba(255,255,255,0.05)',
+          1, 'rgba(255,255,255,0.02)'
+        ]}
+        stroke="rgba(255,255,255,0.2)"
+        strokeWidth={1}
+      />
+      
+      {/* Status indicator */}
+      <Circle
+        x={-width / 2 + 16}
+        y={-height / 2 + 16}
+        radius={6}
+        fill={getStatusColor()}
+      />
+      
+      {/* Badge with ID */}
+      <Group x={width / 2 - 20} y={height / 2 - 15}>
+        <Rect
+          width={30}
+          height={20}
+          x={-15}
+          y={-10}
+          cornerRadius={5}
+          fill="rgba(255,255,255,0.1)"
+          stroke="rgba(255,255,255,0.3)"
+          strokeWidth={1}
+        />
+        <Text
+          text={rack.id}
+          fontSize={12}
+          fontFamily="'IBM Plex Sans Thai', monospace"
+          fontStyle="bold"
+          fill="white"
+          align="center"
+          verticalAlign="middle"
+          width={30}
+          height={20}
+          x={-15}
+          y={-10}
+        />
+      </Group>
+      
+      {/* Type icon */}
+      <Group x={-width / 2 + 45} y={-height / 2 + 45}>
+        {getIcon()}
+      </Group>
+      
+      {/* Rack label */}
+      <Text
+        text={rack.label}
+        fontSize={16}
+        fontFamily="'IBM Plex Sans Thai', system-ui"
+        fontStyle="bold"
+        fill="white"
+        align="center"
+        width={width - 20}
+        x={-width / 2 + 10}
+        y={-15}
+      />
+      
+      {/* Metrics */}
+      {getMetrics()}
+      
+      {/* Enhanced glowing effect when selected or hovered */}
+      {(isSelected || hovered) && (
+        <Rect
+          width={width}
+          height={height}
+          x={-width / 2}
+          y={-height / 2}
+          cornerRadius={12}
+          stroke={colors.accent}
+          strokeWidth={2}
+          opacity={0.6}
+          shadowColor={colors.accent}
+          shadowBlur={20}
+          shadowOpacity={0.5}
+        />
+      )}
+    </Group>
+  );
+};
+
+// Data Center View Component using Konva
+const DataCenterView = ({ 
+  racks, 
+  title, 
+  site, 
+  onRackSelect, 
+  selectedRackId,
+  theme
+}: { 
+  racks: RackData[]; 
+  title: string; 
+  site: string; 
+  onRackSelect: (id: string) => void; 
+  selectedRackId: string | null;
+  theme: 'light' | 'dark';
+}) => {
+  const stageRef = useRef<Konva.Stage | null>(null);
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  
+  // Calculate stage dimensions based on rack positions
+  const getDimensions = () => {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    
+    racks.forEach(rack => {
+      minX = Math.min(minX, rack.position.x - 80);
+      maxX = Math.max(maxX, rack.position.x + 80);
+      minY = Math.min(minY, rack.position.y - 100);
+      maxY = Math.max(maxY, rack.position.y + 100);
+    });
+    
+    return {
+      width: maxX - minX + 100,
+      height: maxY - minY + 100
+    };
+  };
+  
+  const dimensions = getDimensions();
+  
+  // Handle zoom in/out
+  const handleZoom = (direction: 'in' | 'out' | 'reset') => {
+    if (direction === 'in') {
+      setScale(prev => Math.min(prev + 0.1, 2));
+    } else if (direction === 'out') {
+      setScale(prev => Math.max(prev - 0.1, 0.5));
+    } else {
+      setScale(1);
+      setPosition({ x: 0, y: 0 });
+    }
+  };
+  
+  // Background colors based on theme
+  const getBgColors = () => {
+    return theme === 'dark' 
+      ? { main: '#1F2937', cold: '#1E40AF', hot: '#B91C1C' }
+      : { main: '#F9FAFB', cold: '#DBEAFE', hot: '#FEE2E2' };
+  };
+  
+  const bgColors = getBgColors();
+  
+  return (
+    <Box sx={{ 
+      width: '100%', 
+      height: '100%', 
+      position: 'relative',
+      bgcolor: theme === 'dark' ? 'background.paper' : 'background.default',
+      borderRadius: 2,
+      overflow: 'hidden',
+      boxShadow: 3
+    }}>
+      {/* Title bar */}
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        p: 2,
+        bgcolor: theme === 'dark' ? 'background.paper' : 'primary.main',
+        color: theme === 'dark' ? 'text.primary' : 'common.white',
+        borderBottom: 1,
+        borderColor: 'divider'
+      }}>
+        <Typography variant="h6" fontWeight="bold">
+          {title}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <IconButton 
+            size="small" 
+            onClick={() => handleZoom('out')}
+            sx={{ color: theme === 'dark' ? 'text.secondary' : 'common.white' }}
+          >
+            <ZoomOut />
+          </IconButton>
+          <IconButton 
+            size="small" 
+            onClick={() => handleZoom('reset')}
+            sx={{ color: theme === 'dark' ? 'text.secondary' : 'common.white' }}
+          >
+            <FullscreenExit />
+          </IconButton>
+          <IconButton 
+            size="small" 
+            onClick={() => handleZoom('in')}
+            sx={{ color: theme === 'dark' ? 'text.secondary' : 'common.white' }}
+          >
+            <ZoomIn />
+          </IconButton>
+        </Box>
+      </Box>
+      
+      {/* Konva stage with racks */}
+      <Box sx={{ 
+        width: '100%', 
+        height: 'calc(100% - 64px)',
+        position: 'relative',
+        overflow: 'hidden',
+        bgcolor: theme === 'dark' ? '#111827' : '#F3F4F6'
+      }}>
+        <Stage
+          ref={stageRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          scaleX={scale}
+          scaleY={scale}
+          x={position.x}
+          y={position.y}
+          draggable
+          onDragEnd={(e) => {
+            setPosition({ x: e.target.x(), y: e.target.y() });
+          }}
+        >
+          <Layer>
+            {/* Background zones */}
+            <Rect
+              width={dimensions.width}
+              height={150}
+              fill={bgColors.hot}
+              opacity={0.2}
+            />
+            <Rect
+              width={dimensions.width}
+              height={400}
+              y={150}
+              fill={bgColors.cold}
+              opacity={0.2}
+            />
+            <Rect
+              width={dimensions.width}
+              height={150}
+              y={550}
+              fill={bgColors.hot}
+              opacity={0.2}
+            />
+            
+            {/* Hot/Cold indicators */}
+            <Group x={700} y={75}>
+              <Rect
+                width={100}
+                height={30}
+                cornerRadius={15}
+                fill="#EF4444"
+                opacity={0.8}
+              />
+              <Text
+                text="🔥 35°C"
+                fontSize={14}
+                fontFamily="'IBM Plex Sans Thai', system-ui"
+                fontStyle="bold"
+                fill="white"
+                align="center"
+                verticalAlign="middle"
+                width={100}
+                height={30}
+              />
+            </Group>
+            
+            <Group x={700} y={350}>
+              <Rect
+                width={100}
+                height={30}
+                cornerRadius={15}
+                fill="#3B82F6"
+                opacity={0.8}
+              />
+              <Text
+                text="❄️ 18°C"
+                fontSize={14}
+                fontFamily="'IBM Plex Sans Thai', system-ui"
+                fontStyle="bold"
+                fill="white"
+                align="center"
+                verticalAlign="middle"
+                width={100}
+                height={30}
+              />
+            </Group>
+            
+            <Group x={700} y={625}>
+              <Rect
+                width={100}
+                height={30}
+                cornerRadius={15}
+                fill="#EF4444"
+                opacity={0.8}
+              />
+              <Text
+                text="🔥 35°C"
+                fontSize={14}
+                fontFamily="'IBM Plex Sans Thai', system-ui"
+                fontStyle="bold"
+                fill="white"
+                align="center"
+                verticalAlign="middle"
+                width={100}
+                height={30}
+              />
+            </Group>
+            
+            {/* Rack items */}
+            {racks.map(rack => (
+              <ModernRackItem
+                key={`${site}-${rack.id}`}
+                rack={rack}
+                isSelected={selectedRackId === rack.id}
+                onSelect={onRackSelect}
+                theme={theme}
+              />
+            ))}
+          </Layer>
+        </Stage>
+      </Box>
+    </Box>
+  );
+};
+
+// Main Rack Layout Dashboard
+const RackLayoutDashboard = () => {
+  const [viewMode, setViewMode] = useState<'split' | 'dc' | 'dr'>('split');
+  const [selectedRack, setSelectedRack] = useState<string | null>(null);
+  const [dcRacks, setDcRacks] = useState<RackData[]>([]);
+  const [drRacks, setDrRacks] = useState<RackData[]>([]);
+  const { isDarkMode } = useCustomTheme();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
+  useEffect(() => {
+    // Load Google Fonts for IBM Plex Sans Thai
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+
+    // DC Configuration with real data structure
+    const dcConfig = [
+      // Row A (Front - facing cold aisle)
+      { id: 'A1', label: 'IT1', type: 'server', isActive: true, temperature: 24, cpuUsage: 45 },
+      { id: 'A2', label: 'IT2', type: 'server', isActive: true, temperature: 23, cpuUsage: 52 },
+      { id: 'A3', label: 'IT3', type: 'server', isActive: true, temperature: 25, cpuUsage: 38 },
+      { id: 'A4', label: 'Air Con3', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'A5', label: 'IT4', type: 'server', isActive: true, temperature: 22, cpuUsage: 67 },
+      { id: 'A6', label: 'IT5', type: 'server', isActive: true, temperature: 26, cpuUsage: 41 },
+      { id: 'A7', label: 'Network1', type: 'network', isActive: true },
+      { id: 'A8', label: 'Network2', type: 'network', isActive: true },
+      
+      // Row B (Back - facing cold aisle)
+      { id: 'B1', label: 'IT6', type: 'server', isActive: true, temperature: 25, cpuUsage: 33 },
+      { id: 'B2', label: 'IT7', type: 'server', isActive: true, temperature: 27, cpuUsage: 58 },
+      { id: 'B3', label: 'Air Con2', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'B4', label: 'IT8', type: 'server', isActive: true, temperature: 24, cpuUsage: 71 },
+      { id: 'B5', label: 'IT9', type: 'server', isActive: true, temperature: 23, cpuUsage: 29 },
+      { id: 'B6', label: 'Air Con1', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'B7', label: 'IT10', type: 'server', isActive: true, temperature: 26, cpuUsage: 44 },
+      { id: 'B8', label: 'Network3', type: 'network', isActive: true },
+    ];
+
+    // DR Configuration
+    const drConfig = [
+      // Row A (Front - 6 items)
+      { id: 'A1', label: 'Network3', type: 'network', isActive: true },
+      { id: 'A2', label: 'IT5', type: 'server', isActive: true, temperature: 24, cpuUsage: 35 },
+      { id: 'A3', label: 'IT4', type: 'server', isActive: true, temperature: 25, cpuUsage: 42 },
+      { id: 'A4', label: 'Air Con2', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'A5', label: 'Battery Cabinet', type: 'battery', isActive: true },
+      { id: 'A6', label: 'UPS Cabinet', type: 'ups', isActive: true },
+
+      // Row B (Back - 6 items)
+      { id: 'B1', label: 'IT3', type: 'server', isActive: true, temperature: 23, cpuUsage: 39 },
+      { id: 'B2', label: 'Air Con1', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'B3', label: 'IT2', type: 'server', isActive: true, temperature: 22, cpuUsage: 48 },
+      { id: 'B4', label: 'Network1', type: 'network', isActive: true },
+      { id: 'B5', label: 'Network2', type: 'network', isActive: true },
+      { id: 'B6', label: 'IT1', type: 'server', isActive: true, temperature: 24, cpuUsage: 55 },
+    ];
+
+    // Position racks function for DC
+    const positionRacks = (config: any[]) => {
+      const cols = 8;
+      const gapX = 170;
+      const rackWidth = 125 * 1.30;
+      const totalWidth = (cols - 1) * gapX + rackWidth;
+      const viewWidth = 1400;
+      const startX = Math.max(20, (viewWidth - totalWidth) / 2);
+      
+      return config.map((rack, index) => ({
+        ...rack,
+        position: {
+          x: startX + (index % cols) * gapX,
+          y: index < cols ? 160 : 540
+        },
+        side: index < cols ? 'front' : 'back'
+      }));
+    };
+
+    // Position racks function for DR
+    const positionRacksDR = (config: any[]) => {
+      const cols = 6;
+      const gapX = 220;
+      const rackWidth = 125 * 1.30;
+      const totalWidth = (cols - 1) * gapX + rackWidth;
+      const viewWidth = 1400;
+      const startX = Math.max(20, (viewWidth - totalWidth) / 2);
+      
+      return config.map((rack, index) => {
+        const col = index % cols;
+        const row = index < cols ? 0 : 1;
+        return {
+          ...rack,
+          position: {
+            x: startX + col * gapX,
+            y: row === 0 ? 160 : 540,
+          },
+          side: row === 0 ? 'front' : 'back',
+        };
+      });
+    };
+
+    setDcRacks(positionRacks(dcConfig));
+    setDrRacks(positionRacksDR(drConfig));
+  }, []);
+
+  const handleRackSelect = (rackId: string) => {
+    setSelectedRack(prevId => prevId === rackId ? null : rackId);
+  };
+  
+  const handleViewChange = (newView: 'split' | 'dc' | 'dr') => {
+    setViewMode(newView);
+    // Reset selection when changing views
+    setSelectedRack(null);
+  };
+  
+  const contentSection = (
+    <>
+      {/* View selection */}
+      <Paper 
+        elevation={2} 
+        sx={{ 
+          p: 2, 
+          borderRadius: 2,
+          mb: 2,
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          justifyContent: 'space-between',
+          gap: 2
+        }}
+      >
+        <Typography variant="h6">เลือกมุมมอง:</Typography>
+        
+        <ButtonGroup variant="contained" color="primary">
+          <Button 
+            variant={viewMode === 'split' ? 'contained' : 'outlined'}
+            onClick={() => handleViewChange('split')}
+            startIcon={<ViewStream />}
+          >
+            DC + DR
+          </Button>
+          <Button 
+            variant={viewMode === 'dc' ? 'contained' : 'outlined'}
+            onClick={() => handleViewChange('dc')}
+            startIcon={<ViewComfy />}
+          >
+            Data Center (DC)
+          </Button>
+          <Button 
+            variant={viewMode === 'dr' ? 'contained' : 'outlined'}
+            onClick={() => handleViewChange('dr')}
+            startIcon={<ViewCompact />}
+          >
+            Disaster Recovery (DR)
+          </Button>
+        </ButtonGroup>
+      </Paper>
+      
+      {/* Selected rack details */}
+      {selectedRack && (
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            mb: 2,
+            border: 1,
+            borderColor: 'primary.main',
+            bgcolor: isDarkMode ? 'background.paper' : 'rgba(25, 118, 210, 0.05)'
+          }}
+        >
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              color: 'primary.main',
+              mb: 2
+            }}
+          >
+            <Info />
+            รายละเอียดตู้ที่เลือก
+          </Typography>
+          
+          <Divider sx={{ mb: 2 }} />
+          
+          {(() => {
+            const dcRack = dcRacks.find(r => r.id === selectedRack);
+            const drRack = drRacks.find(r => r.id === selectedRack);
+            const rack = dcRack || drRack;
+            const site = dcRack ? 'Data Center (DC)' : 'Disaster Recovery (DR)';
+            
+            return rack ? (
+              <Box sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: 3,
+                '& > div': {
+                  minWidth: { xs: '100%', sm: '45%', md: '30%' },
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0.5
+                }
+              }}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">ศูนย์ข้อมูล / Site</Typography>
+                  <Typography variant="body1" fontWeight="medium">{site}</Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">รหัส / ID</Typography>
+                  <Typography variant="body1" fontWeight="medium">{rack.id}</Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">ชื่อ / Label</Typography>
+                  <Typography variant="body1" fontWeight="medium">{rack.label}</Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">ประเภท / Type</Typography>
+                  <Chip 
+                    label={rack.type} 
+                    color={
+                      rack.type === 'server' ? 'default' :
+                      rack.type === 'network' ? 'primary' :
+                      rack.type === 'aircon' ? 'success' :
+                      rack.type === 'battery' ? 'warning' : 'secondary'
+                    }
+                    size="small"
+                    sx={{ fontWeight: 'medium' }}
+                    icon={
+                      rack.type === 'server' ? <Memory /> :
+                      rack.type === 'network' ? <Router /> :
+                      rack.type === 'aircon' ? <AcUnit /> :
+                      rack.type === 'battery' ? <BatteryChargingFull /> : <PowerSettingsNew />
+                    }
+                  />
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">สถานะ / Status</Typography>
+                  <Chip 
+                    label={rack.isActive ? "ทำงานปกติ" : "ไม่ทำงาน"} 
+                    color={rack.isActive ? "success" : "error"}
+                    size="small"
+                    sx={{ fontWeight: 'medium' }}
+                  />
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">ตำแหน่ง / Position</Typography>
+                  <Typography variant="body1" fontWeight="medium">
+                    {rack.id.startsWith('A') ? 'แถวหน้า (Front Row)' : 'แถวหลัง (Back Row)'}
+                  </Typography>
+                </Box>
+                
+                {rack.temperature && (
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">อุณหภูมิ / Temperature</Typography>
+                    <Typography 
+                      variant="body1" 
+                      fontWeight="medium"
+                      color={
+                        rack.temperature > 28 ? 'error.main' :
+                        rack.temperature > 25 ? 'warning.main' : 'success.main'
+                      }
+                    >
+                      {rack.temperature}°C
+                    </Typography>
+                  </Box>
+                )}
+                
+                {rack.cpuUsage && (
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">การใช้งาน CPU / CPU Usage</Typography>
+                    <Typography 
+                      variant="body1" 
+                      fontWeight="medium"
+                      color={
+                        rack.cpuUsage > 80 ? 'error.main' :
+                        rack.cpuUsage > 60 ? 'warning.main' : 'success.main'
+                      }
+                    >
+                      {rack.cpuUsage}%
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            ) : null;
+          })()}
+        </Paper>
+      )}
+      
+      {/* Main content */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: viewMode === 'split' ? 'row' : 'column' },
+        gap: 2,
+        flex: 1,
+        height: viewMode === 'split' ? { xs: '140vh', md: '80vh' } : '80vh'
+      }}>
+        {(viewMode === 'split' || viewMode === 'dc') && (
+          <Box sx={{ 
+            flex: 1, 
+            height: viewMode === 'split' ? '100%' : '100%',
+            minHeight: { xs: '500px', md: viewMode === 'split' ? '100%' : '700px' }
+          }}>
+            <DataCenterView
+              racks={dcRacks}
+              title="Data Center (DC)"
+              site="DC"
+              onRackSelect={handleRackSelect}
+              selectedRackId={selectedRack}
+              theme={isDarkMode ? 'dark' : 'light'}
+            />
+          </Box>
+        )}
+        
+        {(viewMode === 'split' || viewMode === 'dr') && (
+          <Box sx={{ 
+            flex: 1, 
+            height: viewMode === 'split' ? '100%' : '100%',
+            minHeight: { xs: '500px', md: viewMode === 'split' ? '100%' : '700px' }
+          }}>
+            <DataCenterView
+              racks={drRacks}
+              title="Disaster Recovery (DR)"
+              site="DR"
+              onRackSelect={handleRackSelect}
+              selectedRackId={selectedRack}
+              theme={isDarkMode ? 'dark' : 'light'}
+            />
+          </Box>
+        )}
+      </Box>
+    </>
+  );
+  
+  return (
+    <ThaiModernLayout>
+      <Box sx={{ 
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        width: '100%'
+      }}>
+        {/* Page header */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 2,
+          mb: 2
+        }}>
+          <Typography 
+            variant="h4" 
+            fontWeight="bold"
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              color: isDarkMode ? 'text.primary' : 'primary.main'
+            }}
+          >
+            <Storage sx={{ fontSize: 36 }} />
+            ตำแหน่งตู้เครือข่าย
+          </Typography>
+          
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title="รีเฟรช" arrow>
+              <IconButton 
+                color="primary"
+                onClick={() => window.location.reload()}
+              >
+                <Refresh />
+              </IconButton>
+            </Tooltip>
+            
+            <Tooltip title="ข้อมูลเพิ่มเติม" arrow>
+              <IconButton 
+                color="primary"
+                onClick={() => console.log('Show info')}
+              >
+                <Info />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+        
+        {contentSection}
+      </Box>
+    </ThaiModernLayout>
+  );
+};
+
+export default RackLayoutDashboard;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimationPhase((prev) => (prev + 1) % 4);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  const getColor = () => {
+    if (type === 'network') return hovered ? '#0ea5e9' : '#0284c7';
+    if (type === 'aircon') return hovered ? '#10b981' : '#059669';
+    if (type === 'battery') return hovered ? '#f59e0b' : '#d97706';
+    if (type === 'ups') return hovered ? '#8b5cf6' : '#7c3aed';
+    return hovered ? '#64748b' : '#475569';
+  };
+
+  const getSecondaryColor = () => {
+    if (type === 'network') return '#075985';
+    if (type === 'aircon') return '#047857';
+    if (type === 'battery') return '#b45309';
+    if (type === 'ups') return '#6d28d9';
+    return '#334155';
+  };
+
+  // Inline SVG icons
+  const ICONS = {
+    server: () => (
+      <g>
+        <rect x="0" y="2" width="16" height="12" rx="2" fill="#e5e7eb" stroke="#94a3b8" strokeWidth="1"/>
+        <rect x="6" y="14" width="4" height="2" rx="1" fill="#94a3b8"/>
+      </g>
+    ),
+    network: () => (
+      <g>
+        <circle cx="8" cy="8" r="7" fill="none" stroke="#e2e8f0" strokeWidth="1.2"/>
+        <path d="M1,8 H15 M8,1 V15 M3,4 C6,6 10,6 13,4 M3,12 C6,10 10,10 13,12" stroke="#94a3b8" strokeWidth="1" fill="none"/>
+      </g>
+    ),
+    aircon: () => (
+      <g>
+        <circle cx="8" cy="8" r="6" fill="none" stroke="#bae6fd" strokeWidth="1"/>
+        <g>
+          <path d="M8,2 L8,14 M2,8 L14,8 M3.5,3.5 L12.5,12.5 M12.5,3.5 L3.5,12.5" stroke="#38bdf8" strokeWidth="1.1"/>
+        </g>
+        <animateTransform attributeName="transform" type="rotate" from="0 8 8" to="360 8 8" dur="6s" repeatCount="indefinite"/>
+      </g>
+    ),
+    battery: () => (
+      <g>
+        <rect x="1" y="3" width="14" height="10" rx="2" fill="#e5e7eb" stroke="#94a3b8" strokeWidth="1"/>
+        <rect x="15" y="6" width="2" height="4" rx="1" fill="#94a3b8"/>
+        <rect x="3" y="5" width="8" height="6" rx="1" fill="#22c55e"/>
+      </g>
+    ),
+    ups: () => (
+      <g>
+        <polygon points="8,2 6,8 9,8 7,14 12,6 9,6" fill="#fbbf24" stroke="#f59e0b" strokeWidth="0.8"/>
+      </g>
+    ),
+  };
+  
+  const renderTypeIcon = () => {
+    const C = ICONS[type] || ICONS.server;
+    return (
+      <g transform="translate(10,14)"><C /></g>
+    );
+  };
+
+  const getCpuUsage = () => {
+    // Use type assertion to let TypeScript know about the properties
+    const data = realData as { cpuUsage?: number };
+    if (data.cpuUsage !== undefined) return Math.round(data.cpuUsage);
+    return 35 + Math.round(Math.random() * 45);
+  };
+
+  const getTemperature = () => {
+    // Use type assertion to let TypeScript know about the properties
+    const data = realData as { temperature?: number };
+    if (data.temperature !== undefined) return data.temperature;
+    if (type === 'aircon') return 18;
+    return 22 + Math.round(Math.random() * 8);
+  };
+
+  return (
+    <g
+      transform={`translate(${position.x}, ${position.y}) scale(${RACK_SCALE_X}, ${RACK_SCALE_Y})`}
+      onClick={() => onClick && onClick(id)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ cursor: 'pointer' }}
+    >
+      {/* Gradient definitions */}
+      <defs>
+        <linearGradient id={`rackGrad-${site}-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style={{stopColor: getColor(), stopOpacity: 1}} />
+          <stop offset="50%" style={{stopColor: getSecondaryColor(), stopOpacity: 0.9}} />
+          <stop offset="100%" style={{stopColor: getSecondaryColor(), stopOpacity: 1}} />
+        </linearGradient>
+        
+        <filter id={`glow-${site}-${id}`} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+          <feColorMatrix in="coloredBlur" type="matrix" 
+            values="1 0 0 0 0.2  0 1 0 0 0.4  0 0 1 0 1  0 0 0 1 0"/>
+          <feMerge> 
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+
+        <filter id={`modernShadow-${site}-${id}`} x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="4" dy="4" stdDeviation="6" floodColor="rgba(0,0,0,0.3)"/>
+        </filter>
+
+        <radialGradient id={`coolEffect-${site}-${id}`} cx="50%" cy="30%" r="80%">
+          <stop offset="0%" style={{stopColor: "#ffffff", stopOpacity: 0.9}} />
+          <stop offset="30%" style={{stopColor: "#e0f2fe", stopOpacity: 0.7}} />
+          <stop offset="60%" style={{stopColor: "#0ea5e9", stopOpacity: 0.4}} />
+          <stop offset="100%" style={{stopColor: "#075985", stopOpacity: 0.1}} />
+        </radialGradient>
+
+        <linearGradient id={`modernGlass-${site}-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style={{stopColor: "rgba(255,255,255,0.3)", stopOpacity: 1}} />
+          <stop offset="50%" style={{stopColor: "rgba(255,255,255,0.1)", stopOpacity: 0.5}} />
+          <stop offset="100%" style={{stopColor: "rgba(255,255,255,0.05)", stopOpacity: 0.2}} />
+        </linearGradient>
+      </defs>
+      
+      {/* Ultra-modern 3D-style rack body */}
+      <g filter={`url(#modernShadow-${site}-${id})`}>
+        <rect
+          width="125"
+          height="100"
+          fill={`url(#rackGrad-${site}-${id})`}
+          stroke={hovered ? "#94a3b8" : "#475569"}
+          strokeWidth={hovered ? "4" : "3"}
+          rx="12"
+          ry="12"
+        >
+          <animate
+            attributeName="stroke-opacity"
+            values={hovered ? "0.5;1;0.5" : "1"}
+            dur="1.8s"
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="stroke-width"
+            values={hovered ? "3;4;3" : "3"}
+            dur="1.8s"
+            repeatCount="indefinite"
+          />
+        </rect>
+        
+        {/* Glass morphism effect */}
+        <rect
+          x="4"
+          y="4"
+          width="117"
+          height="90"
+          fill={`url(#modernGlass-${site}-${id})`}
+          stroke="rgba(255,255,255,0.5)"
+          strokeWidth="2"
+          rx="10"
+          ry="10"
+        >
+          <animate
+            attributeName="opacity"
+            values="0.6;0.9;0.6"
+            dur="3s"
+            repeatCount="indefinite"
+          />
+        </rect>
+
+        {/* Edge lighting */}
+        <rect
+          x="2"
+          y="2"
+          width="121"
+          height="96"
+          fill="none"
+          stroke="rgba(255,255,255,0.7)"
+          strokeWidth="1.5"
+          rx="11"
+          ry="11"
+        >
+          <animate
+            attributeName="stroke-dasharray"
+            values="0 400;200 200;400 0"
+            dur="4s"
+            repeatCount="indefinite"
+          />
+        </rect>
+        
+        {/* Air conditioning cooling effect */}
+        {type === 'aircon' && (
+          <g>
+            <rect
+              width="125"
+              height="85"
+              fill={`url(#coolEffect-${site}-${id})`}
+              rx="12"
+              ry="12"
+            >
+              <animate
+                attributeName="opacity"
+                values="0.2;0.9;0.2"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            </rect>
+            
+            {/* Cooling particle system */}
+            {[...Array(12)].map((_, i) => (
+              <g key={i}>
+                <circle
+                  r={2 + (i % 3) * 0.5}
+                  fill={i % 2 === 0 ? "#ffffff" : "#0ea5e9"}
+                  opacity="0.8"
+                  filter="url(#glow-${site}-${id})"
+                >
+                  <animateMotion
+                    dur={`${1.5 + i * 0.2}s`}
+                    repeatCount="indefinite"
+                    begin={`${i * 0.15}s`}
+                    path={`M ${15 + i * 8} 85 Q ${25 + i * 8} 45 Q ${35 + i * 8} 20 ${45 + i * 8} 0`}
+                  />
+                  <animate
+                    attributeName="opacity"
+                    values="0;1;0.5;0"
+                    dur={`${1.5 + i * 0.2}s`}
+                    repeatCount="indefinite"
+                    begin={`${i * 0.15}s`}
+                  />
+                  <animate
+                    attributeName="r"
+                    values={`${1 + (i % 3) * 0.5};${3 + (i % 3) * 0.5};${1 + (i % 3) * 0.5}`}
+                    dur={`${1.5 + i * 0.2}s`}
+                    repeatCount="indefinite"
+                    begin={`${i * 0.15}s`}
+                  />
+                </circle>
+              </g>
+            ))}
+            
+            {/* Cooling waves */}
+            {[...Array(4)].map((_, i) => (
+              <ellipse
+                key={`wave-${i}`}
+                cx="62"
+                cy="42"
+                rx="20"
+                ry="10"
+                fill="none"
+                stroke="#0ea5e9"
+                strokeWidth="2"
+                opacity="0.4"
+              >
+                <animate
+                  attributeName="rx"
+                  values={`${20 + i * 10};${60 + i * 15};${20 + i * 10}`}
+                  dur={`${3 + i * 0.5}s`}
+                  repeatCount="indefinite"
+                  begin={`${i * 0.8}s`}
+                />
+                <animate
+                  attributeName="ry"
+                  values={`${10 + i * 5};${25 + i * 8};${10 + i * 5}`}
+                  dur={`${3 + i * 0.5}s`}
+                  repeatCount="indefinite"
+                  begin={`${i * 0.8}s`}
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0;0.6;0"
+                  dur={`${3 + i * 0.5}s`}
+                  repeatCount="indefinite"
+                  begin={`${i * 0.8}s`}
+                />
+              </ellipse>
+            ))}
+          </g>
+        )}
+      </g>
+      
+      {/* Text Labels */}
+      <g transform={`scale(1, ${NON_STRETCH_SCALE_Y})`}>
+        <text
+          x="62.5"
+          y="42"
+          fontFamily="'IBM Plex Sans Thai', system-ui"
+          fontSize="14"
+          fontWeight="700"
+          fill="white"
+          textAnchor="middle"
+          opacity="0.9"
+        >
+          {label}
+        </text>
+        
+        {type !== 'aircon' && (
+          <g>
+            <text
+              x="62.5"
+              y="64"
+              fontFamily="'IBM Plex Sans Thai', system-ui"
+              fontSize="10"
+              fontWeight="600"
+              fill="white"
+              textAnchor="middle"
+              opacity="0.8"
+            >
+              {getTemperature()}°C
+            </text>
+            
+            {/* Add CPU usage for server types */}
+            {(type === 'server' || type === 'network') && (
+              <text
+                x="62.5"
+                y="78"
+                fontFamily="'IBM Plex Sans Thai', system-ui"
+                fontSize="10"
+                fontWeight="600"
+                fill="white"
+                textAnchor="middle"
+                opacity="0.8"
+              >
+                CPU {getCpuUsage()}%
+              </text>
+            )}
+          </g>
+        )}
+        
+        {/* ID Tag */}
+        <g transform={`translate(${BADGE_X}, ${BADGE_Y})`}>
+          <rect width={BADGE_W} height={BADGE_H} rx="3" ry="3" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.5)" strokeWidth="0.5"/>
+          <text x={BADGE_W/2} y={BADGE_H/2 + 4} fontFamily="'IBM Plex Sans Thai', monospace" fontSize="9" fontWeight="700" fill="white" textAnchor="middle">
+            {id}
+          </text>
+        </g>
+        
+        {/* Type Icon */}
+        {renderTypeIcon()}
+      </g>
+    </g>
+  );
+}
+
+// Enhanced Data Center View Component
+function EnhancedDataCenterView({ racks, title, site, width = "100%", height = "700px", onRackClick }: EnhancedDataCenterViewProps) {
+  return (
+    <div style={{
+      width,
+      height,
+      position: 'relative',
+      background: 'linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%)',
+      borderRadius: '16px',
+      boxShadow: '0 10px 20px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.05)',
+      overflow: 'hidden',
+      border: '1px solid rgba(226, 232, 240, 0.6)',
+    }}>
+      {/* Title Section */}
+      <div style={{
+        padding: '16px 24px',
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <h3 style={{
+          margin: 0,
+          fontFamily: "'IBM Plex Sans Thai', system-ui",
+          fontWeight: 600,
+          fontSize: '1.25rem'
+        }}>
+          {title}
+        </h3>
+        
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <div style={{
+            padding: '6px 12px',
+            borderRadius: '20px',
+            background: 'rgba(34, 197, 94, 0.15)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            <div style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: '#22c55e',
+              boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)'
+            }}></div>
+            <span style={{ 
+              fontSize: '0.75rem', 
+              fontWeight: 600,
+              color: '#22c55e'
+            }}>OPERATIONAL</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* SVG Display */}
+      <svg width="100%" height={height} style={{ display: 'block' }}>
+        {/* Backdrop - Cold/Hot Aisle Visualization */}
+        <defs>
+          <linearGradient id={`coldAisle-${site}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style={{stopColor: "#0ea5e9", stopOpacity: 0.05}} />
+            <stop offset="50%" style={{stopColor: "#38bdf8", stopOpacity: 0.15}} />
+            <stop offset="100%" style={{stopColor: "#0ea5e9", stopOpacity: 0.05}} />
+          </linearGradient>
+          
+          <linearGradient id={`hotAisle-${site}-top`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style={{stopColor: "#ef4444", stopOpacity: 0.02}} />
+            <stop offset="100%" style={{stopColor: "#ef4444", stopOpacity: 0.12}} />
+          </linearGradient>
+          
+          <linearGradient id={`hotAisle-${site}-bottom`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style={{stopColor: "#ef4444", stopOpacity: 0.12}} />
+            <stop offset="100%" style={{stopColor: "#ef4444", stopOpacity: 0.02}} />
+          </linearGradient>
+        </defs>
+        
+        {/* Hot Zone - Top */}
+        <rect x="0" y="0" width="100%" height="150" 
+              fill={`url(#hotAisle-${site}-top)`} />
+        
+        {/* Cold Aisle */}
+        <rect x="0" y="150" width="100%" height="400" 
+              fill={`url(#coldAisle-${site})`} />
+        
+        {/* Hot Zone - Bottom */}
+        <rect x="0" y="550" width="100%" height="150" 
+              fill={`url(#hotAisle-${site}-bottom)`} />
+        
+        {/* Server Racks */}
+        {racks.map((rack) => (
+          <ServerRack
+            key={`${site}-${rack.id}`}
+            position={rack.position}
+            id={rack.id}
+            label={rack.label}
+            type={rack.type}
+            isActive={rack.isActive}
+            onClick={onRackClick}
+            site={site}
+            realData={{
+              temperature: rack.temperature,
+              cpuUsage: rack.cpuUsage
+            }}
+          />
+        ))}
+        
+        {/* Flow Markers */}
+        <defs>
+          <marker 
+            id={`coldFlowArrow-${site}`} 
+            viewBox="0 0 10 10" 
+            refX="5" 
+            refY="5"
+            markerWidth="4" 
+            markerHeight="4" 
+            orient="auto-start-reverse"
+          >
+            <polygon points="0 0, 10 5, 0 10" fill="#0ea5e9"/>
+          </marker>
+          
+          <marker 
+            id={`hotFlowArrow-${site}`} 
+            viewBox="0 0 10 10" 
+            refX="1" 
+            refY="5"
+            markerWidth="4" 
+            markerHeight="4" 
+            orient="auto"
+          >
+            <polygon points="0 0, 10 5, 0 10" fill="#ef4444"/>
+          </marker>
+        </defs>
+        
+        {/* Temperature Indicators */}
+        <g transform="translate(700, 330)">
+          <rect width="120" height="30" fill="rgba(14, 165, 233, 0.9)" 
+                stroke="#0ea5e9" strokeWidth="2" rx="15"/>
+          <text x="60" y="20" textAnchor="middle" fontSize="12" 
+                fill="white" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="600">
+            ❄️ 18°C
+          </text>
+        </g>
+        
+        {/* Hot Exhaust Temperature - Row A */}
+        <g transform="translate(700, 105)">
+          <rect width="120" height="30" fill="rgba(239, 68, 68, 0.9)" 
+                stroke="#ef4444" strokeWidth="2" rx="15"/>
+          <text x="60" y="20" textAnchor="middle" fontSize="12" 
+                fill="white" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="600">
+            🔥 35°C
+          </text>
+        </g>
+        
+        {/* Hot Exhaust Temperature - Row B */}
+        <g transform="translate(700, 635)">
+          <rect width="120" height="30" fill="rgba(239, 68, 68, 0.9)" 
+                stroke="#ef4444" strokeWidth="2" rx="15"/>
+          <text x="60" y="20" textAnchor="middle" fontSize="12" 
+                fill="white" fontFamily="'IBM Plex Sans Thai', system-ui" fontWeight="600">
+            🔥 35°C
+          </text>
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+// Main Rack Layout Dashboard Component
+function RackLayoutDashboard() {
+  const [currentView, setCurrentView] = useState('split');
+  const [selectedRack, setSelectedRack] = useState(null);
+  const [dcRacks, setDcRacks] = useState([]);
+  const [drRacks, setDrRacks] = useState([]);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
+  useEffect(() => {
+    // Load Google Fonts for IBM Plex Sans Thai
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+
+    // DC Configuration with real data structure
+    const dcConfig = [
+      // Row A (Front - facing cold aisle)
+      { id: 'A1', label: 'IT1', type: 'server', isActive: true, temperature: 24, cpuUsage: 45 },
+      { id: 'A2', label: 'IT2', type: 'server', isActive: true, temperature: 23, cpuUsage: 52 },
+      { id: 'A3', label: 'IT3', type: 'server', isActive: true, temperature: 25, cpuUsage: 38 },
+      { id: 'A4', label: 'Air Con3', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'A5', label: 'IT4', type: 'server', isActive: true, temperature: 22, cpuUsage: 67 },
+      { id: 'A6', label: 'IT5', type: 'server', isActive: true, temperature: 26, cpuUsage: 41 },
+      { id: 'A7', label: 'Network1', type: 'network', isActive: true },
+      { id: 'A8', label: 'Network2', type: 'network', isActive: true },
+      
+      // Row B (Back - facing cold aisle)
+      { id: 'B1', label: 'IT6', type: 'server', isActive: true, temperature: 25, cpuUsage: 33 },
+      { id: 'B2', label: 'IT7', type: 'server', isActive: true, temperature: 27, cpuUsage: 58 },
+      { id: 'B3', label: 'Air Con2', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'B4', label: 'IT8', type: 'server', isActive: true, temperature: 24, cpuUsage: 71 },
+      { id: 'B5', label: 'IT9', type: 'server', isActive: true, temperature: 23, cpuUsage: 29 },
+      { id: 'B6', label: 'Air Con1', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'B7', label: 'IT10', type: 'server', isActive: true, temperature: 26, cpuUsage: 44 },
+      { id: 'B8', label: 'Network3', type: 'network', isActive: true },
+    ];
+
+    // DR Configuration
+    const drConfig = [
+      // Row A (Front - 6 items)
+      { id: 'A1', label: 'Network3', type: 'network', isActive: true },
+      { id: 'A2', label: 'IT5', type: 'server', isActive: true, temperature: 24, cpuUsage: 35 },
+      { id: 'A3', label: 'IT4', type: 'server', isActive: true, temperature: 25, cpuUsage: 42 },
+      { id: 'A4', label: 'Air Con2', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'A5', label: 'Battery Cabinet', type: 'battery', isActive: true },
+      { id: 'A6', label: 'UPS Cabinet', type: 'ups', isActive: true },
+
+      // Row B (Back - 6 items)
+      { id: 'B1', label: 'IT3', type: 'server', isActive: true, temperature: 23, cpuUsage: 39 },
+      { id: 'B2', label: 'Air Con1', type: 'aircon', isActive: true, temperature: 18 },
+      { id: 'B3', label: 'IT2', type: 'server', isActive: true, temperature: 22, cpuUsage: 48 },
+      { id: 'B4', label: 'Network1', type: 'network', isActive: true },
+      { id: 'B5', label: 'Network2', type: 'network', isActive: true },
+      { id: 'B6', label: 'IT1', type: 'server', isActive: true, temperature: 24, cpuUsage: 55 },
+    ];
+
+    // Position racks function for DC
+    const positionRacks = (config, offsetX = 0) => {
+      const cols = 8;
+      const gapX = 170;
+      const rackWidth = 125 * 1.30;
+      const totalWidth = (cols - 1) * gapX + rackWidth;
+      const viewWidth = 1400;
+      const startX = Math.max(20, (viewWidth - totalWidth) / 2);
+      
+      return config.map((rack, index) => ({
+        ...rack,
+        position: {
+          x: startX + (index % cols) * gapX,
+          y: index < cols ? 160 : 540
+        },
+        side: index < cols ? 'front' : 'back'
+      }));
+    };
+
+    // Position racks function for DR
+    const positionRacksDR = (config, offsetX = 0) => {
+      const cols = 6;
+      const gapX = 220;
+      const rackWidth = 125 * 1.30;
+      const totalWidth = (cols - 1) * gapX + rackWidth;
+      const viewWidth = 1400;
+      const startX = Math.max(20, (viewWidth - totalWidth) / 2);
+      
+      return config.map((rack, index) => {
+        const col = index % cols;
+        const row = index < cols ? 0 : 1;
+        return {
+          ...rack,
+          position: {
+            x: startX + col * gapX,
+            y: row === 0 ? 160 : 540,
+          },
+          side: row === 0 ? 'front' : 'back',
+        };
+      });
+    };
+
+    setDcRacks(positionRacks(dcConfig, 0));
+    setDrRacks(positionRacksDR(drConfig, 0));
+  }, []);
+
+  // Handle rack click for details
+  const handleRackClick = (rackId) => {
+    setSelectedRack(rackId);
+  };
+
+  // Render enhanced metric cards
+  const renderMetricCard = (title, value, icon, color) => (
+    <Grid item xs={12} sm={6} md={3}>
+      <Card 
+        sx={{ 
+          borderRadius: 4, 
+          boxShadow: 3,
+          border: `1px solid ${color}20`,
+          height: '100%'
+        }}
+      >
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Avatar 
+              sx={{ 
+                bgcolor: `${color}20`, 
+                color: color,
+                mr: 1.5,
+                width: 44,
+                height: 44
+              }}
+            >
+              {icon}
+            </Avatar>
+            <Typography variant="h6" fontWeight="600" fontFamily="'IBM Plex Sans Thai', system-ui">
+              {title}
+            </Typography>
+          </Box>
+          <Typography 
+            variant="h4" 
+            fontWeight="700" 
+            fontFamily="'IBM Plex Sans Thai', system-ui"
+            color={color}
+            sx={{ mt: 1 }}
+          >
+            {value}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Grid>
+  );
+
+  // Render status cards
+  const renderStatusCard = (status, items) => (
+    <Card 
+      sx={{ 
+        borderRadius: 4, 
+        boxShadow: 3,
+        p: 2,
+        mb: 3,
+        bgcolor: status === 'normal' ? '#ecfdf5' : status === 'warning' ? '#fffbeb' : '#fef2f2'
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Avatar 
+          sx={{ 
+            bgcolor: status === 'normal' ? '#10b981' : status === 'warning' ? '#f59e0b' : '#ef4444',
+            color: 'white',
+            mr: 1.5,
+            width: 40,
+            height: 40
+          }}
+        >
+          {status === 'normal' ? <CheckCircle /> : status === 'warning' ? <WarningAmber /> : <NotificationsActive />}
+        </Avatar>
+        <Typography variant="h6" fontWeight="600" fontFamily="'IBM Plex Sans Thai', system-ui">
+          {status === 'normal' ? 'สถานะปกติ' : status === 'warning' ? 'คำเตือน' : 'แจ้งเตือน'}
+        </Typography>
+      </Box>
+      <Divider sx={{ mb: 2 }} />
+      <Stack spacing={1}>
+        {items.map((item, index) => (
+          <Alert 
+            key={index}
+            severity={status === 'normal' ? 'success' : status === 'warning' ? 'warning' : 'error'}
+            sx={{ borderRadius: 2 }}
+          >
+            {item}
+          </Alert>
+        ))}
+      </Stack>
+    </Card>
+  );
+
+  return (
+    <Box sx={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+      p: { xs: 2, md: 3 }
+    }}>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          borderRadius: 4, 
+          mb: 3, 
+          p: 3,
+          backgroundImage: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+          color: 'white',
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: { xs: 'flex-start', md: 'center' },
+          justifyContent: 'space-between',
+          gap: 2
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar 
+            sx={{ 
+              bgcolor: '#3b82f6', 
+              width: 56, 
+              height: 56,
+              boxShadow: '0 0 15px rgba(59, 130, 246, 0.5)'
+            }}
+          >
+            🏥
+          </Avatar>
+          <Box>
+            <Typography variant="h4" fontWeight="700" fontFamily="'IBM Plex Sans Thai', system-ui">
+              Data Center Monitoring
+            </Typography>
+            <Typography variant="subtitle1" fontFamily="'IBM Plex Sans Thai', system-ui" sx={{ opacity: 0.85 }}>
+              โรงพยาบาลศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์
+            </Typography>
+          </Box>
+        </Box>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Chip 
+            label="สถานะ: ออนไลน์" 
+            color="success" 
+            sx={{ 
+              borderRadius: 5, 
+              px: 1,
+              fontWeight: 600,
+              '& .MuiChip-label': { px: 1 }
+            }} 
+            icon={<CheckCircle />} 
+          />
+          <IconButton color="primary" sx={{ bgcolor: 'rgba(255,255,255,0.1)' }}>
+            <Refresh />
+          </IconButton>
+        </Box>
+      </Paper>
+      
+      {/* Metric Cards */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {renderMetricCard('เครื่องแม่ข่าย', '16', <Memory />, theme.palette.primary.main)}
+        {renderMetricCard('อุณหภูมิเฉลี่ย', '24°C', <AcUnit />, '#0ea5e9')}
+        {renderMetricCard('การใช้งาน CPU', '48%', <Dashboard />, '#8b5cf6')}
+        {renderMetricCard('สถานะระบบ', 'ปกติ', <CheckCircle />, '#22c55e')}
+      </Grid>
+      
+      {/* View Selection */}
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center',
+          mb: 3
+        }}
+      >
+        <Paper 
+          sx={{ 
+            py: 1, 
+            px: 2, 
+            borderRadius: 3,
+            display: 'flex',
+            alignItems: 'center'
+          }}
+        >
+          <Typography variant="subtitle1" sx={{ mr: 2, fontWeight: 600 }}>
+            มุมมอง:
+          </Typography>
+          <FormControl variant="outlined" size="small">
+            <Select
+              value={currentView}
+              onChange={(e) => setCurrentView(e.target.value)}
+              sx={{ 
+                minWidth: 150, 
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'transparent'
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'transparent'
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'transparent'
+                },
+                '& .MuiSelect-select': {
+                  fontWeight: 600,
+                  py: 1
+                }
+              }}
+            >
+              <MenuItem value="split">DC + DR</MenuItem>
+              <MenuItem value="dc-full">DC</MenuItem>
+              <MenuItem value="dr-full">DR</MenuItem>
+            </Select>
+          </FormControl>
+        </Paper>
+      </Box>
+      
+      {/* Data Center Views */}
+      {currentView === 'split' && (
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} md={6}>
+            <EnhancedDataCenterView 
+              racks={dcRacks} 
+              title="Data Center (DC)" 
+              site="DC" 
+              height="700px"
+              onRackClick={handleRackClick}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <EnhancedDataCenterView 
+              racks={drRacks} 
+              title="Disaster Recovery (DR)" 
+              site="DR" 
+              height="700px"
+              onRackClick={handleRackClick}
+            />
+          </Grid>
+        </Grid>
+      )}
+      
+      {currentView === 'dc-full' && (
+        <Box sx={{ mb: 3 }}>
+          <EnhancedDataCenterView 
+            racks={dcRacks} 
+            title="Primary Data Center (DC) - มุมมองแบบเต็ม" 
+            site="DC" 
+            height="700px"
+            onRackClick={handleRackClick}
+          />
+        </Box>
+      )}
+      
+      {currentView === 'dr-full' && (
+        <Box sx={{ mb: 3 }}>
+          <EnhancedDataCenterView 
+            racks={drRacks} 
+            title="Disaster Recovery (DR) - มุมมองแบบเต็ม" 
+            site="DR" 
+            height="700px"
+            onRackClick={handleRackClick}
+          />
+        </Box>
+      )}
+      
+      {/* Selected Rack Details */}
+      {selectedRack && (
+        <Paper 
+          sx={{ 
+            borderRadius: 4, 
+            p: 3, 
+            mb: 3,
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            bgcolor: 'rgba(254, 249, 195, 0.2)'
+          }}
+        >
+          <Typography 
+            variant="h5" 
+            fontWeight="700" 
+            fontFamily="'IBM Plex Sans Thai', system-ui"
+            color="#d97706"
+            sx={{ mb: 2 }}
+          >
+            🎯 รายละเอียดอุปกรณ์ที่เลือก - Selected Equipment Details
+          </Typography>
+          
+          {(() => {
+            const dcRack = dcRacks.find(r => r.id === selectedRack);
+            const drRack = drRacks.find(r => r.id === selectedRack);
+            const rack = dcRack || drRack;
+            const site = dcRack ? 'DC' : 'DR';
+            
+            return rack ? (
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle1" fontWeight="600">
+                    🏢 ศูนย์ข้อมูล - Site:
+                  </Typography>
+                  <Typography variant="body1">
+                    {site === 'DC' ? 'ศูนย์ข้อมูลหลัก - Primary Data Center' : 'ศูนย์ข้อมูลสำรอง - Disaster Recovery'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle1" fontWeight="600">
+                    🏷️ รหัส - ID:
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedRack} | {rack.label}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle1" fontWeight="600">
+                    📋 ประเภท - Type:
+                  </Typography>
+                  <Typography variant="body1">
+                    {rack.type} | {rack.isActive ? '🟢 ทำงาน - Active' : '🔴 ไม่ทำงาน - Inactive'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle1" fontWeight="600">
+                    📍 ตำแหน่ง - Position:
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedRack.startsWith('A') ? 'แถวหน้า - Front Row' : 'แถวหลัง - Back Row'}
+                  </Typography>
+                </Grid>
+                {rack.temperature && (
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Typography variant="subtitle1" fontWeight="600">
+                      🌡️ อุณหภูมิ - Temperature:
+                    </Typography>
+                    <Typography variant="body1">
+                      {rack.temperature}°C
+                    </Typography>
+                  </Grid>
+                )}
+                {rack.cpuUsage && (
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Typography variant="subtitle1" fontWeight="600">
+                      ⚙️ การใช้งาน CPU:
+                    </Typography>
+                    <Typography variant="body1">
+                      {rack.cpuUsage}%
+                    </Typography>
+                  </Grid>
+                )}
+              </Grid>
+            ) : null;
+          })()}
+        </Paper>
+      )}
+      
+      {/* Status Cards */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={4}>
+          {renderStatusCard('normal', [
+            'ระบบทำงานปกติทุกส่วน - All Systems Operational',
+            'อุณหภูมิ: ปกติ (18-24°C) - Temperature Normal',
+            'การไหลเวียนอากาศ: เหมาะสม - Airflow Optimal'
+          ])}
+        </Grid>
+        <Grid item xs={12} md={4}>
+          {renderStatusCard('warning', [
+            'อุณหภูมิ Rack B2 สูงกว่าปกติ (27°C)',
+            'การใช้งาน CPU ของ Rack B4 สูง (71%)'
+          ])}
+        </Grid>
+        <Grid item xs={12} md={4}>
+          {renderStatusCard('error', [
+            'อัพเดทการตรวจสอบระบบล่าสุด: 5 นาทีที่แล้ว'
+          ])}
+        </Grid>
+      </Grid>
+      
+      {/* Equipment Summary */}
+      <Paper 
+        sx={{ 
+          borderRadius: 4, 
+          p: 3, 
+          mt: 3,
+          boxShadow: 3
+        }}
+      >
+        <Typography 
+          variant="h5" 
+          fontWeight="700" 
+          fontFamily="'IBM Plex Sans Thai', system-ui"
+          sx={{ mb: 3 }}
+        >
+          📊 สรุปอุปกรณ์ - Equipment Summary
+        </Typography>
+        
+        <Grid container spacing={2}>
+          {[
+            { icon: <Memory />, label: 'เครื่องแม่ข่าย - Servers', count: '16 เครื่อง', color: theme.palette.primary.main },
+            { icon: <AcUnit />, label: 'เครื่องปรับอากาศ - Air Conditioning', count: '6 เครื่อง', color: '#0ea5e9' },
+            { icon: <Router />, label: 'อุปกรณ์เครือข่าย - Network Equipment', count: '6 เครื่อง', color: '#6366f1' },
+            { icon: <BatteryChargingFull />, label: 'แบตเตอรี่ - Battery', count: '2 เครื่อง', color: '#f59e0b' },
+            { icon: <Power />, label: 'ระบบไฟฟ้าสำรอง - UPS', count: '2 เครื่อง', color: '#8b5cf6' },
+            { icon: <Dashboard />, label: 'ระบบตรวจสอบ - Monitoring', count: '1 ระบบ', color: '#10b981' }
+          ].map((item, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Box 
+                sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  p: 2,
+                  borderRadius: 3,
+                  bgcolor: `${item.color}10`,
+                  border: `1px solid ${item.color}30`
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar 
+                    sx={{ 
+                      bgcolor: `${item.color}20`, 
+                      color: item.color
+                    }}
+                  >
+                    {item.icon}
+                  </Avatar>
+                  <Typography variant="subtitle1" fontWeight="500" fontFamily="'IBM Plex Sans Thai', system-ui">
+                    {item.label}
+                  </Typography>
+                </Box>
+                <Typography variant="h6" fontWeight="700" color={item.color}>
+                  {item.count}
+                </Typography>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </Paper>
+      
+      {/* Hospital Information */}
+      <Paper 
+        sx={{ 
+          borderRadius: 4, 
+          p: 3, 
+          mt: 3,
+          mb: 3,
+          backgroundImage: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        <Box 
+          sx={{
+            position: 'absolute',
+            top: '-30%',
+            left: '-30%',
+            width: '60%',
+            height: '60%',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+            animation: 'pulse 4s ease-in-out infinite'
+          }}
+        />
+        
+        <Typography 
+          variant="h5" 
+          fontWeight="700" 
+          fontFamily="'IBM Plex Sans Thai', system-ui"
+          sx={{ mb: 3, position: 'relative' }}
+        >
+          🏥 ข้อมูลสถานพยาบาล - Facility Information
+        </Typography>
+        
+        <Grid container spacing={3} sx={{ position: 'relative' }}>
+          <Grid item xs={12} md={6}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span style={{ fontSize: '1.2rem' }}>🏫</span>
+                <Typography variant="body1" fontFamily="'IBM Plex Sans Thai', system-ui">
+                  มหาวิทยาลัยวลัยลักษณ์ - Walailak University
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span style={{ fontSize: '1.2rem' }}>🏥</span>
+                <Typography variant="body1" fontFamily="'IBM Plex Sans Thai', system-ui">
+                  โรงพยาบาลศูนย์การแพทย์ - Medical Center Hospital
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span style={{ fontSize: '1.2rem' }}>💻</span>
+                <Typography variant="body1" fontFamily="'IBM Plex Sans Thai', system-ui">
+                  โครงสร้างพื้นฐานดิจิทัลทางการแพทย์ - Medical Digital Infrastructure
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span style={{ fontSize: '1.2rem' }}>📍</span>
+                <Typography variant="body1" fontFamily="'IBM Plex Sans Thai', system-ui">
+                  จ.นครศรีธรรมราช - Nakhon Si Thammarat, Thailand
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span style={{ fontSize: '1.2rem' }}>👥</span>
+                <Typography variant="body1" fontFamily="'IBM Plex Sans Thai', system-ui">
+                  ผู้รับผิดชอบ: แผนกไอที - IT Department
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span style={{ fontSize: '1.2rem' }}>📞</span>
+                <Typography variant="body1" fontFamily="'IBM Plex Sans Thai', system-ui">
+                  เบอร์ติดต่อฉุกเฉิน: 075-XXX-XXX
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span style={{ fontSize: '1.2rem' }}>📅</span>
+                <Typography variant="body1" fontFamily="'IBM Plex Sans Thai', system-ui">
+                  ติดตั้งระบบเมื่อ: มกราคม 2566
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span style={{ fontSize: '1.2rem' }}>🔄</span>
+                <Typography variant="body1" fontFamily="'IBM Plex Sans Thai', system-ui">
+                  อัพเดทล่าสุด: 3 พฤษภาคม 2567
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+      
+      {/* CSS Animations */}
+      <style>
+        {`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        `}
+      </style>
+    </Box>
+  );
+}
+
+export default RackLayoutDashboard;
