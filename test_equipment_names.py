@@ -8,14 +8,15 @@ import asyncio
 import asyncpg
 import json
 from datetime import datetime
+import os
 
 # Database configuration
 DATABASE_CONFIG = {
-    'host': 'localhost',
-    'port': 5432,
-    'database': 'ecc800',
-    'user': 'ecc800',
-    'password': 'ecc800123'
+    'host': os.getenv('POSTGRES_HOST', 'localhost'),
+    'port': int(os.getenv('POSTGRES_PORT', '5432')),
+    'database': os.getenv('POSTGRES_DB', 'ecc800'),
+    'user': os.getenv('POSTGRES_USER', 'ecc800'),
+    'password': os.getenv('POSTGRES_PASSWORD', 'change-me')
 }
 
 async def test_equipment_names():

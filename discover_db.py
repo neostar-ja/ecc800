@@ -26,11 +26,11 @@ import json
 async def discover_database():
     # Database connection from environment
     conn = await asyncpg.connect(
-        host="10.251.150.222",
-        port=5210,
-        database="ecc800",
-        user="apirak",
-        password="Kanokwan@1987#neostar"
+        host=os.getenv("POSTGRES_HOST", "localhost"),
+        port=int(os.getenv("POSTGRES_PORT", "5432")),
+        database=os.getenv("POSTGRES_DB", "ecc800"),
+        user=os.getenv("POSTGRES_USER", "ecc800"),
+        password=os.getenv("POSTGRES_PASSWORD", "change-me")
     )
     
     try:

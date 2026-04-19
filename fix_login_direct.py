@@ -10,7 +10,12 @@ SIMPLIFIED_HANDLER = """
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from app.main import app
+import os
 import json
+
+EMERGENCY_USERNAME = os.getenv("EMERGENCY_ADMIN_USERNAME", "admin")
+EMERGENCY_PASSWORD = os.getenv("EMERGENCY_ADMIN_PASSWORD", "change-me-admin")
+EMERGENCY_TOKEN = os.getenv("EMERGENCY_TOKEN", "dummy_token_for_testing_admin_login")
 
 # Direct login endpoint for frontend
 @app.post("/ecc800/api/auth/login")
@@ -23,10 +28,10 @@ async def direct_login(request: Request):
         
         print(f"Login attempt: {username}")
         
-        # Hardcoded admin check for testing
-        if username == "admin" and password == "Admin123!":
+        # Emergency login check for testing (values via env only)
+        if username == EMERGENCY_USERNAME and password == EMERGENCY_PASSWORD:
             # Create a simple token
-            token = "dummy_token_for_testing_admin_login"
+            token = EMERGENCY_TOKEN
             print(f"Login successful for: {username}")
             return {
                 "access_token": token,
@@ -66,8 +71,9 @@ try:
 
     # Test the login endpoint
     print("\nTesting login endpoint...")
+        emergency_password = os.getenv("EMERGENCY_ADMIN_PASSWORD", "change-me-admin")
     cmd = ["curl", "-k", "-v", "-X", "POST", "https://10.251.150.222:3344/ecc800/api/auth/login", 
-           "-d", "username=admin&password=Admin123!", "-H", "Content-Type: application/x-www-form-urlencoded"]
+            "-d", f"username=admin&password={emergency_password}", "-H", "Content-Type: application/x-www-form-urlencoded"]
     subprocess.run(cmd, check=True)
     
 except Exception as e:

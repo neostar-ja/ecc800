@@ -38,11 +38,11 @@ class Settings(BaseSettings):
     
     # Admin users
     admin_username: str = "admin"
-    admin_password: str = "Admin123!"
+    admin_password: str = "change-me-admin"
     analyst_username: str = "analyst"
-    analyst_password: str = "Analyst123!"
+    analyst_password: str = "change-me-analyst"
     viewer_username: str = "viewer"
-    viewer_password: str = "Viewer123!"
+    viewer_password: str = "change-me-viewer"
 
     # Optional table name overrides - กำหนดชื่อตารางเพิ่มเติมถ้าไม่ตรงกับ heuristic
     PERF_TABLE: str | None = None
