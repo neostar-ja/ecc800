@@ -32,7 +32,8 @@ import {
   Speed,
   AcUnit,
   PowerSettingsNew,
-  BoltOutlined
+  BoltOutlined,
+  ElectricBolt
 } from '@mui/icons-material';
 import { useTheme as useCustomTheme } from '../contexts/ThemeProvider';
 import { apiGet } from '../lib/api';
@@ -197,34 +198,47 @@ const EnhancedPUECard: React.FC<EnhancedPUECardProps> = ({ value, trendData, sit
           <Box
             sx={{
               p: 1.2,
-              bgcolor: alpha(siteColor, 0.15),
+              background: `linear-gradient(135deg, ${alpha(siteColor, 0.15)} 0%, ${alpha(color, 0.1)} 100%)`,
               borderRadius: 2.5,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: `0 4px 12px ${alpha(siteColor, 0.3)}`,
+              boxShadow: `0 8px 24px ${alpha(siteColor, 0.25)}, inset 0 1px 0 ${alpha(siteColor, 0.1)}`,
+              border: `2px solid ${alpha(siteColor, 0.3)}`,
+              position: 'relative',
+              overflow: 'hidden',
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                background: `radial-gradient(circle at top right, ${alpha(color, 0.2)}, transparent)`,
+                pointerEvents: 'none',
+              }
             }}
           >
-            <Speed sx={{ color: siteColor, fontSize: 28 }} />
+            <ElectricBolt sx={{ color: color, fontSize: 32, position: 'relative', zIndex: 1 }} />
           </Box>
           <Box>
-            <Typography variant={{ xs: 'subtitle1', sm: 'h6' }} fontWeight="900" color={siteColor} letterSpacing={-0.5}>
+            <Box display="flex" alignItems="baseline" gap={1}>
+              <Typography variant={{ xs: 'h6', sm: 'h5' }} fontWeight="900" sx={{
+                background: `linear-gradient(135deg, ${siteColor} 0%, ${color} 100%)`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: -0.5,
+              }}>
+                PUE
+              </Typography>
+              <Typography variant="caption" color={alpha(siteColor, 0.7)} fontWeight="bold" fontSize="0.65rem">
+                ⚡ EFFICIENCY
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary" fontSize="0.7rem" fontWeight={500} sx={{ opacity: 0.8, mt: 0.5, display: 'block' }}>
               Power Usage Effectiveness
-            </Typography>
-            <Typography variant="caption" color="text.secondary" fontSize="0.7rem" fontWeight={600} sx={{ opacity: 0.7, mt: 0.3 }}>
-              อัพเดท: {lastUpdated
-                ? new Date(lastUpdated).toLocaleString('th-TH', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    day: '2-digit',
-                    month: 'short'
-                  })
-                : '--'}
             </Typography>
           </Box>
         </Box>
         <Chip
-          icon={<Speed />}
+          icon={<ElectricBolt />}
           label="LIVE"
           size="small"
           sx={{
@@ -783,7 +797,7 @@ const RoomEnvironmentCard: React.FC<RoomEnvironmentCardProps> = ({
           </Box>
           <Box>
             <Typography variant="h6" fontWeight="bold" color="#f97316" letterSpacing={-0.5}>
-              Room Environment
+              สิ่งแวดล้อมห้อง
             </Typography>
             <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
               อุณหภูมิ/ความชื้นของห้อง
@@ -2181,30 +2195,8 @@ const NewDashboardPage: React.FC = () => {
                   mb: 1,
                 }}
               >
-                Real-time Dashboard
+                WUH Datacenter Monitor Dashboard
               </Typography>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Chip
-                  icon={<Speed />}
-                  label="LIVE MONITORING"
-                  size="small"
-                  sx={{
-                    bgcolor: alpha('#00e676', 0.15),
-                    color: '#00e676',
-                    fontWeight: 'bold',
-                    animation: `${pulse} 2s infinite`,
-                  }}
-                />
-                <Typography variant="body2" color="text.secondary">
-                  Last updated: {data?.timestamp
-                    ? new Date(data.timestamp).toLocaleString('th-TH', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                      })
-                    : '--'}
-                </Typography>
-              </Stack>
             </Box>
             <Stack direction="row" spacing={2}>
               <Tooltip title={autoRefresh ? 'Auto-refresh ON (30s)' : 'Auto-refresh OFF'}>
