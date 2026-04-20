@@ -91,9 +91,9 @@ main() {
   fi
 
   # ============================================================================
-  # 2. Check for uncommitted changes
+  # 2. Check for uncommitted changes and commits ready to push
   # ============================================================================
-  print_header "2️⃣  Checking Uncommitted Changes"
+  print_header "2️⃣  Checking Changes & Commits"
 
   STAGED=$(git diff --cached --name-only | wc -l)
   UNSTAGED=$(git diff --name-only | wc -l)
@@ -102,143 +102,189 @@ main() {
   echo "Staged files:       $STAGED"
   echo "Unstaged changes:   $UNSTAGED"
   echo "Untracked files:    $UNTRACKED"
+
+  # Check for commits ready to push
+  COMMITS_AHEAD=$(git rev-list origin/main..HEAD 2>/dev/null | wc -l || echo 0)
+  echo "Commits ahead:      $COMMITS_AHEAD"
   echo ""
 
+  # If no uncommitted changes but has commits to push, just push them
   if [[ $STAGED -eq 0 && $UNSTAGED -eq 0 && $UNTRACKED -eq 0 ]]; then
-    print_warning "No changes to commit"
-    print_info "Everything is up to date"
-    exit 0
-  fi
-
-  # Show summary of changes
-  print_info "Changes to be reviewed:"
-  echo ""
-  
-  if [[ $UNSTAGED -gt 0 ]]; then
-    echo "📝 Unstaged changes:"
-    git diff --name-only | sed 's/^/   - /'
-    echo ""
-  fi
-
-  if [[ $UNTRACKED -gt 0 ]]; then
-    echo "📄 Untracked files:"
-    git ls-files --others --exclude-standard | head -10 | sed 's/^/   - /'
-    if [[ $UNTRACKED -gt 10 ]]; then
-      echo "   ... and $((UNTRACKED - 10)) more files"
-    fi
-    echo ""
-  fi
-
-  # ============================================================================
-  # 3. Prepare commit
-  # ============================================================================
-  print_header "3️⃣  Prepare Commit"
-
-  print_info "Options:"
-  echo "  1) Add all changes (git add -A)"
-  echo "  2) Add specific files (git add ...)"
-  echo "  3) Cancel"
-  echo ""
-  
-  read -p "Choose option (1-3): " choice
-
-  case $choice in
-    1)
-      print_info "Staging all changes..."
-      git add -A
-      print_success "All changes staged"
-      ;;
-    2)
-      read -p "Enter files to add (space-separated, or 'all'): " files
-      if [[ "$files" == "all" ]]; then
-        git add -A
-      else
-        git add $files
-      fi
-      print_success "Files staged"
-      ;;
-    *)
-      print_info "Cancelled"
-      exit 0
-      ;;
-  esac
-
-  # Show what will be committed
-  echo ""
-  print_info "Files staged for commit:"
-  git diff --cached --name-only | sed 's/^/   - /'
-  echo ""
-
-  # ============================================================================
-  # 4. Create commit message
-  # ============================================================================
-  print_header "4️⃣  Create Commit Message"
-
-  print_info "Enter commit message (or leave empty to use default):"
-  echo "  Default: 'Update: $(date +%Y-%m-%d) - Backend and frontend improvements'"
-  echo ""
-  
-  read -p "Commit message: " commit_msg
-
-  if [[ -z "$commit_msg" ]]; then
-    commit_msg="Update: $(date +%Y-%m-%d) - Backend and frontend improvements"
-  fi
-
-  print_info "Commit message: $commit_msg"
-
-  # ============================================================================
-  # 5. Security scan
-  # ============================================================================
-  print_header "5️⃣  Security Scan (Pre-commit Check)"
-
-  SUSPICIOUS_PATTERNS='(POSTGRES_PASSWORD=|JWT_SECRET=|BEGIN RSA PRIVATE KEY|BEGIN OPENSSH PRIVATE KEY|aws_secret|api_key|password\s*=|Kanokwan@1987)'
-  
-  if git diff --cached -U0 | grep -E -i "$SUSPICIOUS_PATTERNS" > /dev/null 2>&1; then
-    print_warning "⚠️  Potential secrets detected in staged changes!"
-    echo ""
-    echo "Matched lines:"
-    git diff --cached -U0 | grep -E -i -n "$SUSPICIOUS_PATTERNS" || true
-    echo ""
-    
-    if ! confirm "Continue with commit anyway?"; then
-      print_info "Commit cancelled for security reasons"
-      git reset
+    if [[ $COMMITS_AHEAD -gt 0 ]]; then
+      print_success "Ready to push $COMMITS_AHEAD commit(s)"
+      PUSH_EXISTING_COMMITS=true
+    else
+      print_warning "No changes to commit and no commits to push"
+      print_info "Everything is up to date"
       exit 0
     fi
   else
-    print_success "No obvious secrets detected"
+    PUSH_EXISTING_COMMITS=false
+  fi
+
+  # Show summary of changes (only if not pushing existing commits)
+  if [[ "$PUSH_EXISTING_COMMITS" == "false" ]]; then
+    print_info "Changes to be reviewed:"
+    echo ""
+    
+    if [[ $UNSTAGED -gt 0 ]]; then
+      echo "📝 Unstaged changes:"
+      git diff --name-only | sed 's/^/   - /'
+      echo ""
+    fi
+
+    if [[ $UNTRACKED -gt 0 ]]; then
+      echo "📄 Untracked files:"
+      git ls-files --others --exclude-standard | head -10 | sed 's/^/   - /'
+      if [[ $UNTRACKED -gt 10 ]]; then
+        echo "   ... and $((UNTRACKED - 10)) more files"
+      fi
+      echo ""
+    fi
   fi
 
   # ============================================================================
-  # 6. Confirm before commit
+  # 3. Prepare commit (skip if pushing existing commits)
   # ============================================================================
-  print_header "6️⃣  Review Before Commit"
+  if [[ "$PUSH_EXISTING_COMMITS" == "true" ]]; then
+    print_header "3️⃣  Skip Commit (Pushing Existing Commits)"
+    print_info "Pushing existing commits to GitHub..."
+    COMMIT_MSG_PROVIDED=true
+  else
+    print_header "3️⃣  Prepare Commit"
+
+    print_info "Options:"
+    echo "  1) Add all changes (git add -A)"
+    echo "  2) Add specific files (git add ...)"
+    echo "  3) Cancel"
+    echo ""
+    
+    read -p "Choose option (1-3): " choice
+
+    case $choice in
+      1)
+        print_info "Staging all changes..."
+        git add -A
+        print_success "All changes staged"
+        ;;
+      2)
+        read -p "Enter files to add (space-separated, or 'all'): " files
+        if [[ "$files" == "all" ]]; then
+          git add -A
+        else
+          git add $files
+        fi
+        print_success "Files staged"
+        ;;
+      *)
+        print_info "Cancelled"
+        exit 0
+        ;;
+    esac
+
+    # Show what will be committed
+    echo ""
+    print_info "Files staged for commit:"
+    git diff --cached --name-only | sed 's/^/   - /'
+    echo ""
+    COMMIT_MSG_PROVIDED=false
+  fi
+
+  # ============================================================================
+  # 4. Create commit message (skip if pushing existing commits)
+  # ============================================================================
+  if [[ "$COMMIT_MSG_PROVIDED" == "false" ]]; then
+    print_header "4️⃣  Create Commit Message"
+
+    print_info "Enter commit message (or leave empty to use default):"
+    echo "  Default: 'Update: $(date +%Y-%m-%d) - Backend and frontend improvements'"
+    echo ""
+    
+    read -p "Commit message: " commit_msg
+
+    if [[ -z "$commit_msg" ]]; then
+      commit_msg="Update: $(date +%Y-%m-%d) - Backend and frontend improvements"
+    fi
+
+    print_info "Commit message: $commit_msg"
+  else
+    print_header "4️⃣  Skip Commit Message"
+    print_info "Using existing commits, no new message needed"
+  fi
+
+  # ============================================================================
+  # 5. Security scan (skip if pushing existing commits)
+  # ============================================================================
+  if [[ "$PUSH_EXISTING_COMMITS" == "false" ]]; then
+    print_header "5️⃣  Security Scan (Pre-commit Check)"
+
+    SUSPICIOUS_PATTERNS='(POSTGRES_PASSWORD=|JWT_SECRET=|BEGIN RSA PRIVATE KEY|BEGIN OPENSSH PRIVATE KEY|aws_secret|api_key|password\s*=|Kanokwan@1987)'
+    
+    if git diff --cached -U0 | grep -E -i "$SUSPICIOUS_PATTERNS" > /dev/null 2>&1; then
+      print_warning "⚠️  Potential secrets detected in staged changes!"
+      echo ""
+      echo "Matched lines:"
+      git diff --cached -U0 | grep -E -i -n "$SUSPICIOUS_PATTERNS" || true
+      echo ""
+      
+      if ! confirm "Continue with commit anyway?"; then
+        print_info "Commit cancelled for security reasons"
+        git reset
+        exit 0
+      fi
+    else
+      print_success "No obvious secrets detected"
+    fi
+  else
+    print_header "5️⃣  Security Scan (Skipped)"
+    print_info "Using existing commits, no new security scan needed"
+  fi
+
+  # ============================================================================
+  # 6. Confirm before commit/push
+  # ============================================================================
+  print_header "6️⃣  Review Before Pushing"
 
   echo "📊 Summary:"
   echo "  Repository: $REMOTE_URL"
   echo "  Branch:     $CURRENT_BRANCH"
-  echo "  Message:    $commit_msg"
-  echo "  Files:      $(git diff --cached --name-only | wc -l)"
+  
+  if [[ "$PUSH_EXISTING_COMMITS" == "true" ]]; then
+    echo "  Action:     Push existing commits"
+    echo "  Commits:    $COMMITS_AHEAD"
+  else
+    echo "  Message:    $commit_msg"
+    echo "  Files:      $(git diff --cached --name-only | wc -l)"
+  fi
   echo ""
 
-  if ! confirm "Proceed with commit and push?"; then
+  if ! confirm "Proceed with push?"; then
     print_info "Cancelled"
-    git reset
+    if [[ "$PUSH_EXISTING_COMMITS" == "false" ]]; then
+      git reset
+    fi
     exit 0
   fi
 
   # ============================================================================
-  # 7. Commit
+  # 7. Commit (skip if pushing existing commits)
   # ============================================================================
-  print_header "7️⃣  Committing Changes"
+  if [[ "$PUSH_EXISTING_COMMITS" == "false" ]]; then
+    print_header "7️⃣  Committing Changes"
 
-  if git commit -m "$commit_msg"; then
-    print_success "Commit created successfully"
-    COMMIT_HASH=$(git rev-parse --short HEAD)
-    print_info "Commit: $COMMIT_HASH"
+    if git commit -m "$commit_msg"; then
+      print_success "Commit created successfully"
+      COMMIT_HASH=$(git rev-parse --short HEAD)
+      print_info "Commit: $COMMIT_HASH"
+    else
+      print_error "Commit failed"
+      exit 1
+    fi
   else
-    print_error "Commit failed"
-    exit 1
+    print_header "7️⃣  Skip Commit (Already Have Commits)"
+    print_info "Using existing commits, no new commit needed"
+    COMMIT_HASH=$(git rev-parse --short HEAD)
+    print_info "Latest commit: $COMMIT_HASH"
   fi
 
   # ============================================================================
