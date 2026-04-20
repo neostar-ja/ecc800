@@ -10,9 +10,9 @@ from datetime import datetime, timedelta, timezone
 import logging
 
 from app.core.database import get_db, execute_raw_query
-from app.services.auth import get_current_user
+from app.auth.dependencies import get_current_user
 from app.schemas.sites import TimeSeriesResponse, TimeSeriesPoint, MetricResponse
-from app.schemas.auth import User
+from app.models.models import User
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

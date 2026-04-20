@@ -3,8 +3,8 @@
 SQLAlchemy models for ECC800 system
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Numeric, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import INET
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Numeric, ForeignKey, Index, ARRAY
+from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -24,7 +24,7 @@ class User(Base):
     full_name = Column(String(100))
     role = Column(String(20), nullable=False)  # admin, analyst, viewer
     email = Column(String(255))  # อีเมล (ไม่บังคับ)
-    site_access = Column(String(255))  # JSON array of sites
+    site_access = Column(ARRAY(String))  # Array of site names/codes
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -130,6 +130,113 @@ class DashboardObject(Base):
         Index('idx_dashboard_objects_datacenter_type', 'data_center_id', 'object_type'),
         Index('idx_dashboard_objects_visible', 'is_visible'),
     )
+
+
+class Role(Base):
+    """บทบาท/สิทธิ์ผู้ใช้งาน"""
+    __tablename__ = "roles"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), unique=True, nullable=False)  # admin, editor, viewer
+    display_name = Column(String(100), nullable=False)  # ชื่อแสดงผล
+    description = Column(Text)  # คำอธิบาย
+    level = Column(Integer, default=0)  # ระดับสิทธิ์ (ยิ่งสูง = สิทธิ์มาก)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class MenuItem(Base):
+    """รายการเมนู/หน้าในระบบ"""
+    __tablename__ = "menu_items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, nullable=False)  # ชื่อ unique ของเมนู
+    display_name = Column(String(100), nullable=False)  # ชื่อแสดงผล
+    path = Column(String(255), nullable=False)  # URL path เช่น /dashboard, /metrics
+    icon = Column(String(50))  # ชื่อ icon (MUI icon name)
+    parent_id = Column(Integer, ForeignKey("menu_items.id"), nullable=True)  # เมนูหลัก (ถ้าเป็น sub-menu)
+    order = Column(Integer, default=0)  # ลำดับการแสดงผล
+    is_visible = Column(Boolean, default=True)  # แสดงในเมนูหรือไม่
+    description = Column(Text)  # คำอธิบาย
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Self-referential relationship
+    parent = relationship("MenuItem", remote_side=[id], backref="children")
+
+
+class RoleMenuPermission(Base):
+    """ความสัมพันธ์ระหว่างบทบาทและสิทธิ์การเข้าถึงเมนู"""
+    __tablename__ = "role_menu_permissions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    role_id = Column(Integer, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
+    menu_item_id = Column(Integer, ForeignKey("menu_items.id", ondelete="CASCADE"), nullable=False)
+    can_view = Column(Boolean, default=True)  # สามารถดูได้
+    can_edit = Column(Boolean, default=False)  # สามารถแก้ไขได้
+    can_delete = Column(Boolean, default=False)  # สามารถลบได้
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    role = relationship("Role", backref="menu_permissions")
+    menu_item = relationship("MenuItem", backref="role_permissions")
+    
+    # Unique constraint
+    __table_args__ = (
+        Index('idx_role_menu_unique', 'role_id', 'menu_item_id', unique=True),
+    )
+
+
+class KeycloakConfig(Base):
+    """การตั้งค่า Keycloak SSO"""
+    __tablename__ = "keycloak_config"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    is_enabled = Column(Boolean, default=False)  # เปิด/ปิดการใช้งาน
+    server_url = Column(String(500))  # URL ของ Keycloak server
+    realm = Column(String(100))  # Realm name
+    client_id = Column(String(100))  # Client ID
+    client_secret = Column(String(500))  # Client secret (encrypted)
+    redirect_uri = Column(String(500))  # Redirect URI หลัง login
+    scope = Column(String(255), default="openid profile email")  # OAuth scopes
+    
+    # Role mapping
+    admin_role = Column(String(100), default="admin")  # Keycloak role -> admin
+    editor_role = Column(String(100), default="editor")  # Keycloak role -> editor
+    viewer_role = Column(String(100), default="viewer")  # Keycloak role -> viewer
+    default_role = Column(String(50), default="viewer")  # Default role if no mapping
+    
+    # Options
+    auto_create_user = Column(Boolean, default=True)  # สร้าง user อัตโนมัติ
+    sync_user_info = Column(Boolean, default=True)  # sync ข้อมูล user
+    
+    # Allowed users - JSON array of {username: string, role: string}
+    allowed_users = Column(JSONB, default=[])  # รายชื่อ user ที่อนุญาตให้เข้าสู่ระบบ
+    
+    updated_by = Column(String(50))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class KeycloakUserMapping(Base):
+    """การ map user จาก Keycloak กับ role ในระบบ"""
+    __tablename__ = "keycloak_user_mapping"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    keycloak_user_id = Column(String(255), unique=True, index=True, nullable=False)
+    keycloak_username = Column(String(255), index=True, nullable=False)
+    keycloak_email = Column(String(255))
+    keycloak_full_name = Column(String(255))
+    local_role = Column(String(50), nullable=False)  # admin, editor, viewer
+    is_enabled = Column(Boolean, default=True)
+    user_attributes = Column(JSONB)  # Additional attributes from Keycloak
+    
+    created_by = Column(String(50))
+    updated_by = Column(String(50))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class DashboardTemplate(Base):

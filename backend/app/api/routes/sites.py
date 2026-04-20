@@ -9,9 +9,9 @@ from typing import List, Optional
 import logging
 
 from app.core.database import get_db, execute_raw_query
-from app.services.auth import get_current_user
+from app.auth.dependencies import get_current_user
 from app.schemas.sites import SiteResponse, EquipmentResponse, UpdateEquipmentNameRequest, UpdateEquipmentNameResponse
-from app.schemas.auth import User
+from app.models.models import User
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -110,8 +110,14 @@ async def get_sites(
     """
     try:
         # Query สำหรับดึง sites จาก performance_data
+        # ✅ Optimized: รวม equipment count ใน query เดียว และใช้ 7-day filter
         query = """
-        SELECT DISTINCT 
+        WITH recent_data AS (
+            SELECT DISTINCT site_code, equipment_id
+            FROM public.performance_data
+            WHERE statistical_start_time >= NOW() - INTERVAL '7 days'
+        )
+        SELECT 
             site_code,
             site_code as site_name,
             CASE 
@@ -120,23 +126,14 @@ async def get_sites(
                 ELSE 'Data Center'
             END as site_type,
             'โรงพยาบาลศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์' as location,
-            'ศูนย์ข้อมูล ECC800' as description
-        FROM public.performance_data
+            'ศูนย์ข้อมูล ECC800' as description,
+            COUNT(DISTINCT equipment_id) as equipment_count
+        FROM recent_data
+        GROUP BY site_code
         ORDER BY site_code;
         """
         
         sites = await execute_raw_query(query)
-        
-        # Count equipment per site
-        equipment_counts = {}
-        for site in sites:
-            count_query = """
-            SELECT COUNT(DISTINCT equipment_id) as equipment_count
-            FROM public.performance_data
-            WHERE site_code = $1
-            """
-            count_result = await execute_raw_query(count_query, [site["site_code"]])
-            equipment_counts[site["site_code"]] = count_result[0]["equipment_count"] if count_result else 0
         
         return [
             SiteResponse(
@@ -146,7 +143,7 @@ async def get_sites(
                 location=site["location"],
                 description=site["description"],
                 is_active=True,
-                equipment_count=equipment_counts.get(site["site_code"], 0)
+                equipment_count=site.get("equipment_count", 0)
             ) for site in sites
         ]
         
@@ -189,6 +186,7 @@ async def get_equipment(
             q_value = q
         
         # Query อุปกรณ์จาก performance_data (แบบง่าย)
+        # ✅ Optimized: ใช้เฉพาะข้อมูล 7 วันล่าสุดเพื่อเพิ่มความเร็วใน hypertable
         base_query = """
         SELECT DISTINCT 
             site_code,
@@ -196,6 +194,7 @@ async def get_equipment(
             COALESCE(equipment_name, equipment_id) as equipment_name,
             'Active' as status
         FROM public.performance_data
+        WHERE statistical_start_time >= NOW() - INTERVAL '7 days'
         """
         
         conditions = []
@@ -210,9 +209,9 @@ async def get_equipment(
             conditions.append(f"(equipment_name ILIKE ${param_index} OR equipment_id ILIKE ${param_index})")
             params.append(f"%{q_value}%")
         
-        where_clause = " AND ".join(conditions) if conditions else ""
-        if where_clause:
-            base_query += f" WHERE {where_clause}"
+        # แยก conditions จาก WHERE ที่มีอยู่แล้ว (7 days filter)
+        if conditions:
+            base_query += " AND " + " AND ".join(conditions)
         
         base_query += " ORDER BY site_code, equipment_id"
         
@@ -375,6 +374,7 @@ async def get_site_equipment(
             WHERE pem.site_code = $1
         ),
         equipment_stats AS (
+            -- ✅ Optimized: ใช้เฉพาะข้อมูล 7 วันล่าสุดเพื่อเพิ่มความเร็วใน hypertable
             SELECT 
                 site_code,
                 equipment_id,
@@ -384,6 +384,7 @@ async def get_site_equipment(
                 MIN(statistical_start_time) as first_data
             FROM performance_data 
             WHERE site_code = $1
+              AND statistical_start_time >= NOW() - INTERVAL '7 days'
             GROUP BY site_code, equipment_id
         )
         SELECT 

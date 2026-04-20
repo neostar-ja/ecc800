@@ -75,11 +75,14 @@ import {
   AcUnit,
   Router,
   Palette as PaletteIcon,
-  Visibility as VisibilityIcon
+  Visibility as VisibilityIcon,
+  ContactSupport,
+  Article,
+  Security
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, apiPut, apiDelete } from '../lib/api';
-import { UserManagement } from '../components/UserManagement';
+import UnifiedAdminManagement from '../components/UnifiedAdminManagement';
 import TimeSeriesChart from '../components/TimeSeriesChart';
 
 // Add custom CSS animations
@@ -562,14 +565,15 @@ const AdminPage: React.FC = () => {
       </Typography>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="admin tabs">
+        <Tabs value={tabValue} onChange={handleTabChange} aria-label="admin tabs" variant="scrollable" scrollButtons="auto">
           <Tab label="ภาพรวมระบบ" />
           <Tab label="ชื่อแทนอุปกรณ์" />
           <Tab label="สุขภาพฐานข้อมูล" />
-          <Tab label="การจัดการผู้ใช้" />
+          <Tab label="การจัดการผู้ใช้ & สิทธิ์" />
           <Tab label="จัดการ Data Center" />
           <Tab label="การตั้งค่า Timescale" />
           <Tab label="การจัดการ Dashboard" />
+          <Tab label="จัดการเนื้อหา" icon={<EditIcon />} />
         </Tabs>
       </Box>
 
@@ -1031,7 +1035,7 @@ const AdminPage: React.FC = () => {
         </Box>
       )}
 
-      {/* Tab 6: Timescale Settings */}
+      {/* Tab 5: Timescale Settings */}
       {tabValue === 5 && (
         <Box sx={{ mt: 3 }}>
           <Grid container spacing={3}>
@@ -1267,9 +1271,9 @@ const AdminPage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Tab 4: User Management */}
+      {/* Tab 4: User Management - ใช้ UnifiedAdminManagement แทน */}
       {tabValue === 3 && (
-        <UserManagement />
+        <UnifiedAdminManagement />
       )}
 
       {/* Tab 5: Data Center Management */}
@@ -2225,6 +2229,224 @@ const AdminPage: React.FC = () => {
                     }}
                   >
                     จัดการ Dashboard Config
+                  </Button>
+                </Stack>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+
+      {/* Tab 7: Content Management */}
+      {tabValue === 7 && (
+        <Box sx={{ mt: 3 }}>
+          <Grid container spacing={3}>
+            {/* Header */}
+            <Grid item xs={12}>
+              <Card sx={{ 
+                borderRadius: 3,
+                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                color: 'white',
+                mb: 3
+              }}>
+                <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                  <EditIcon sx={{ fontSize: 48, mb: 2, opacity: 0.9 }} />
+                  <Typography variant="h4" fontWeight="bold" gutterBottom>
+                    จัดการเนื้อหา
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9, maxWidth: 600, mx: 'auto' }}>
+                    แก้ไขเนื้อหาของหน้า ศูนย์ช่วยเหลือ, ข้อกำหนดการใช้งาน, และนโยบายความเป็นส่วนตัว
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Help Page Content */}
+            <Grid item xs={12}>
+              <Card sx={{ borderRadius: 3 }}>
+                <CardHeader 
+                  title={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <ContactSupport sx={{ color: '#667eea' }} />
+                      <Typography variant="h6">ศูนย์ช่วยเหลือ (Help)</Typography>
+                    </Box>
+                  }
+                  action={
+                    <Button
+                      variant="contained"
+                      startIcon={<VisibilityIcon />}
+                      component="a"
+                      href="/ecc800/help"
+                      target="_blank"
+                      sx={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      }}
+                    >
+                      ดูหน้า
+                    </Button>
+                  }
+                  subheader="แก้ไขเนื้อหาหน้าศูนย์ช่วยเหลือ"
+                />
+                <CardContent>
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      📝 หน้านี้แสดงคำถามที่พบบ่อย, วิธีการติดต่อ, และข้อมูลสำหรับผู้ใช้งาน
+                    </Typography>
+                  </Alert>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    URL: <strong>https://10.251.150.222:3344/ecc800/help</strong>
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    sx={{ mt: 1 }}
+                  >
+                    แก้ไขเนื้อหา
+                  </Button>
+                  <Button
+                    variant="text"
+                    startIcon={<RefreshIcon />}
+                    sx={{ mt: 1, ml: 1 }}
+                  >
+                    รีเซ็ตเป็นค่าเริ่มต้น
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Terms Page Content */}
+            <Grid item xs={12}>
+              <Card sx={{ borderRadius: 3 }}>
+                <CardHeader 
+                  title={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Article sx={{ color: '#f093fb' }} />
+                      <Typography variant="h6">ข้อกำหนดการใช้งาน (Terms)</Typography>
+                    </Box>
+                  }
+                  action={
+                    <Button
+                      variant="contained"
+                      startIcon={<VisibilityIcon />}
+                      component="a"
+                      href="/ecc800/terms"
+                      target="_blank"
+                      sx={{
+                        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                      }}
+                    >
+                      ดูหน้า
+                    </Button>
+                  }
+                  subheader="แก้ไขข้อกำหนดและเงื่อนไขการใช้งาน"
+                />
+                <CardContent>
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      ⚠️ การแก้ไขข้อกำหนดจะมีผลกับผู้ใช้งานทั้งหมด กรุณาตรวจสอบอย่างละเอียดก่อนบันทึก
+                    </Typography>
+                  </Alert>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    URL: <strong>https://10.251.150.222:3344/ecc800/terms</strong>
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    sx={{ mt: 1 }}
+                  >
+                    แก้ไขเนื้อหา
+                  </Button>
+                  <Button
+                    variant="text"
+                    startIcon={<RefreshIcon />}
+                    sx={{ mt: 1, ml: 1 }}
+                  >
+                    รีเซ็ตเป็นค่าเริ่มต้น
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Privacy Page Content */}
+            <Grid item xs={12}>
+              <Card sx={{ borderRadius: 3 }}>
+                <CardHeader 
+                  title={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Security sx={{ color: '#4facfe' }} />
+                      <Typography variant="h6">นโยบายความเป็นส่วนตัว (Privacy)</Typography>
+                    </Box>
+                  }
+                  action={
+                    <Button
+                      variant="contained"
+                      startIcon={<VisibilityIcon />}
+                      component="a"
+                      href="/ecc800/privacy"
+                      target="_blank"
+                      sx={{
+                        background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                      }}
+                    >
+                      ดูหน้า
+                    </Button>
+                  }
+                  subheader="แก้ไขนโยบายความเป็นส่วนตัวและการคุ้มครองข้อมูล"
+                />
+                <CardContent>
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      🔒 นโยบายนี้เกี่ยวข้องกับกฎหมาย PDPA กรุณาปรึกษานักกฎหมายก่อนแก้ไข
+                    </Typography>
+                  </Alert>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    URL: <strong>https://10.251.150.222:3344/ecc800/privacy</strong>
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    sx={{ mt: 1 }}
+                  >
+                    แก้ไขเนื้อหา
+                  </Button>
+                  <Button
+                    variant="text"
+                    startIcon={<RefreshIcon />}
+                    sx={{ mt: 1, ml: 1 }}
+                  >
+                    รีเซ็ตเป็นค่าเริ่มต้น
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Action Buttons */}
+            <Grid item xs={12}>
+              <Paper sx={{ p: 3, borderRadius: 3, bgcolor: 'background.default' }}>
+                <Stack direction="row" spacing={2} justifyContent="center">
+                  <Button
+                    variant="outlined"
+                    startIcon={<CancelIcon />}
+                  >
+                    ยกเลิก
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<SaveIcon />}
+                    sx={{
+                      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #e085eb 0%, #e54f62 100%)',
+                      }
+                    }}
+                  >
+                    บันทึกการเปลี่ยนแปลงทั้งหมด
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<UpdateIcon />}
+                  >
+                    ดูประวัติการแก้ไข
                   </Button>
                 </Stack>
               </Paper>

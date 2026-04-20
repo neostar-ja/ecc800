@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-import os
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -113,11 +112,13 @@ async def login_for_access_token(
         
         access_token = create_access_token(data={"sub": user.username})
         return {"access_token": access_token, "token_type": "bearer"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Login error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Login failed: {str(e)}"
+            detail="Login failed"
         )
 
 
@@ -187,7 +188,7 @@ async def initialize_users(db: AsyncSession = Depends(get_db)):
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to initialize users: {str(e)}"
+            detail="Failed to initialize users"
         )
 
 
@@ -198,7 +199,7 @@ async def dev_token():
     This endpoint is intentionally gated and should NOT be enabled in production.
     It exists to make automated tests in local/dev environments easier.
     """
-    if os.environ.get("ALLOW_DEV_TOKEN", "false").lower() != "true":
+    if not settings.ALLOW_DEV_TOKEN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Dev token not allowed")
 
     # Create a token for the default admin user

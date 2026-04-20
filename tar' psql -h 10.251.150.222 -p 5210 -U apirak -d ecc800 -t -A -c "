@@ -1,0 +1,24 @@
+      equipment_name       | performance_data | value_numeric | unit 
+---------------------------+------------------+---------------+------
+ Cooling-NetCol5000-A05-01 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-01 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-01 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-01 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-01 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-01 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-01 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-01 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-02 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-02 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-02 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-02 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-02 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-02 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-02 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-02 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-03 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-03 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-03 | Power            |        0.0000 | kW
+ Cooling-NetCol5000-A05-03 | Power            |        0.0000 | kW
+(20 rows)
+

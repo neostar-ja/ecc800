@@ -3,6 +3,8 @@
  * ไคลเอนต์ API สำหรับระบบติดตามศูนย์ข้อมูล ECC800
  */
 
+import { useAuthStore } from '../stores/authStore';
+
 // API base URL from environment - URL พื้นฐาน API จากสภาพแวดล้อม
 const API_BASE = import.meta.env.VITE_API_BASE || "/ecc800/api";
 
@@ -10,23 +12,16 @@ const API_BASE = import.meta.env.VITE_API_BASE || "/ecc800/api";
  * Get authorization headers - รับ header การอนุญาต
  */
 function getAuthHeaders(): Record<string, string> {
-  // Try to get token from Zustand store first, then localStorage
-  const authData = localStorage.getItem('ecc800-auth');
-  let token: string | null = null;
+  // Try to get token from Zustand store first
+  const token = useAuthStore.getState().token;
   
-  if (authData) {
-    try {
-      const parsed = JSON.parse(authData);
-      token = parsed.state?.token || parsed.token;
-    } catch {
-      // Fallback to simple token storage
-      token = localStorage.getItem("token");
-    }
-  } else {
-    token = localStorage.getItem("token");
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
   }
   
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  // Fallback: try localStorage
+  const localToken = localStorage.getItem("token");
+  return localToken ? { Authorization: `Bearer ${localToken}` } : {};
 }
 
 /**
@@ -35,13 +30,13 @@ function getAuthHeaders(): Record<string, string> {
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     if (response.status === 401) {
-      // Unauthorized - clear token and redirect to login
+      // Unauthorized - clear token but DON'T redirect (let React Router handle it)
       localStorage.removeItem("token");
       localStorage.removeItem("ecc800-auth");
-      // Use relative path instead of absolute
-      if (window.location.pathname !== "/ecc800/" && window.location.pathname !== "/ecc800/login") {
-        window.location.href = "/ecc800/login";
-      }
+      
+      // Clear auth store
+      useAuthStore.getState().logout();
+      
       throw new Error("Unauthorized");
     }
     
@@ -56,6 +51,17 @@ async function handleResponse<T>(response: Response): Promise<T> {
     throw new Error(errorMessage);
   }
   
+  // Handle 204 No Content (e.g., DELETE responses)
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  
+  // Handle empty response body
+  const contentLength = response.headers.get('content-length');
+  if (contentLength === '0') {
+    return undefined as T;
+  }
+  
   return response.json() as Promise<T>;
 }
 
@@ -63,18 +69,24 @@ async function handleResponse<T>(response: Response): Promise<T> {
  * Generic GET request - คำขอ GET ทั่วไป
  */
 export async function apiGet<T>(path: string, params?: Record<string, any>): Promise<T> {
-  const url = new URL(API_BASE + path, window.location.origin);
+  // Build URL with query parameters - สร้าง URL พร้อมพารามิเตอร์
+  let url = API_BASE + path;
   
   // Add query parameters - เพิ่มพารามิเตอร์ query
   if (params) {
+    const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        url.searchParams.append(key, String(value));
+        searchParams.append(key, String(value));
       }
     });
+    const queryString = searchParams.toString();
+    if (queryString) {
+      url += (url.includes('?') ? '&' : '?') + queryString;
+    }
   }
   
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Accept": "application/json",

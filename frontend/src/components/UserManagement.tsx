@@ -1,488 +1,437 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * User Management Component
+ * จัดการผู้ใช้พร้อม Role Assignment
+ */
+import React, { useState } from 'react';
 import {
   Box,
-  Paper,
-  Typography,
-  Button,
+  Card,
+  CardHeader,
+  CardContent,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Paper,
+  Button,
+  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  Select,
-  MenuItem,
   FormControl,
   InputLabel,
-  Switch,
+  Select,
+  MenuItem,
   FormControlLabel,
-  Chip,
-  IconButton,
+  Switch,
   Alert,
   CircularProgress,
+  Chip,
   Tooltip,
-  Snackbar
+  Typography,
+  InputAdornment
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Visibility as ViewIcon,
+  Refresh as RefreshIcon,
+  People as PeopleIcon,
+  Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
-  Key as KeyIcon,
-  Refresh as RefreshIcon
+  AdminPanelSettings as AdminIcon,
+  SupervisorAccount as EditorIcon,
+  Person as ViewerIcon
 } from '@mui/icons-material';
-import { apiGet, apiPost, apiPut, apiDelete } from '../lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { rolesApi, Role } from '../services/authExtended';
 
+// User types
 interface User {
   id: number;
   username: string;
-  full_name: string | null;
-  email: string | null;
+  email?: string | null;
+  full_name?: string | null;
   role: string;
-  site_access: string[] | string | null;
   is_active: boolean;
-  created_at: string;
+  created_at?: string;
   updated_at?: string;
 }
 
-interface UserFormData {
+interface UserCreate {
   username: string;
   password: string;
-  full_name: string;
-  email: string;
+  email?: string;
+  full_name?: string;
   role: string;
-  site_access: string[];
-  is_active: boolean;
+  is_active?: boolean;
 }
 
-interface Role {
-  value: string;
-  label: string;
-  description: string;
+interface UserUpdate {
+  password?: string;
+  email?: string;
+  full_name?: string;
+  role?: string;
+  is_active?: boolean;
 }
 
-export const UserManagement: React.FC = () => {
-  // State management
-  const [users, setUsers] = useState<User[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(true);
+// API functions
+import { apiGet, apiPost, apiPut, apiDelete } from '../lib/api';
+
+const usersApi = {
+  list: async () => {
+    return apiGet<User[]>('/users/');
+  },
+  get: async (id: number) => {
+    return apiGet<User>(`/users/${id}/`);
+  },
+  create: async (data: UserCreate) => {
+    return apiPost<User>('/users/', data);
+  },
+  update: async (id: number, data: UserUpdate) => {
+    return apiPut<User>(`/users/${id}/`, data);
+  },
+  delete: async (id: number) => {
+    return apiDelete(`/users/${id}/`);
+  }
+};
+
+const UserManagement: React.FC = () => {
+  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-
-  // Form data state
-  const [formData, setFormData] = useState<UserFormData>({
+  const [formData, setFormData] = useState<UserCreate>({
     username: '',
     password: '',
-    full_name: '',
     email: '',
+    full_name: '',
     role: 'viewer',
-    site_access: [],
     is_active: true
   });
 
-  // Password form state
-  const [passwordForm, setPasswordForm] = useState({
-    current_password: '',
-    new_password: '',
-    confirm_password: ''
+  // Fetch users
+  const { data: users, isLoading: usersLoading, error, refetch } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => usersApi.list()
   });
 
-  // Load users and roles on component mount
-  useEffect(() => {
-    loadUsers();
-    loadRoles();
-  }, []);
+  // Fetch roles for selection
+  const { data: rolesData } = useQuery({
+    queryKey: ['roles'],
+    queryFn: () => rolesApi.list({ is_active: true })
+  });
 
-  // API Functions
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await apiGet<User[]>('/admin/users');
-      setUsers(response);
-    } catch (error: any) {
-      showSnackbar('Failed to load users: ' + error.message, 'error');
-    } finally {
-      setLoading(false);
+  const roles = Array.isArray(rolesData) ? rolesData : [];
+
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: (data: UserCreate) => usersApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      handleCloseDialog();
     }
-  };
+  });
 
-  const loadRoles = async () => {
-    try {
-      const response = await apiGet<{ roles: Role[] }>('/admin/roles');
-      setRoles(response.roles || []);
-    } catch (error: any) {
-      console.error('Failed to load roles:', error);
-      // Default roles if API fails
-      setRoles([
-        { value: 'admin', label: 'Administrator', description: 'Full system access' },
-        { value: 'analyst', label: 'Data Analyst', description: 'Data analysis and reporting' },
-        { value: 'viewer', label: 'Viewer', description: 'View-only access' }
-      ]);
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UserUpdate }) => usersApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      handleCloseDialog();
     }
-  };
+  });
 
-  const createUser = async (userData: UserFormData) => {
-    try {
-      // Convert site_access array to JSON string for API
-      const apiData = {
-        ...userData,
-        site_access: JSON.stringify(userData.site_access)
-      };
-      await apiPost('/admin/users', apiData);
-      loadUsers();
-      showSnackbar('User created successfully!', 'success');
-      closeDialog();
-    } catch (error: any) {
-      showSnackbar('Failed to create user: ' + error.message, 'error');
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => usersApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setDeleteConfirmOpen(false);
+      setUserToDelete(null);
     }
-  };
+  });
 
-  const updateUser = async (userId: number, userData: Partial<UserFormData>) => {
-    try {
-      // Convert site_access array to JSON string for API if provided
-      const apiData = {
-        ...userData,
-        site_access: userData.site_access ? JSON.stringify(userData.site_access) : undefined
-      };
-      await apiPut(`/admin/users/${userId}`, apiData);
-      loadUsers();
-      showSnackbar('User updated successfully!', 'success');
-      closeDialog();
-    } catch (error: any) {
-      showSnackbar('Failed to update user: ' + error.message, 'error');
+  const handleOpenDialog = (user?: User) => {
+    if (user) {
+      setEditingUser(user);
+      setFormData({
+        username: user.username,
+        password: '', // Don't pre-fill password
+        email: user.email || '',
+        full_name: user.full_name || '',
+        role: user.role,
+        is_active: user.is_active
+      });
+    } else {
+      setEditingUser(null);
+      setFormData({
+        username: '',
+        password: '',
+        email: '',
+        full_name: '',
+        role: 'viewer',
+        is_active: true
+      });
     }
-  };
-
-  const deleteUser = async (userId: number) => {
-    try {
-      await apiDelete(`/admin/users/${userId}`);
-      loadUsers();
-      showSnackbar('User deleted successfully!', 'success');
-      setDeleteDialogOpen(false);
-    } catch (error: any) {
-      showSnackbar('Failed to delete user: ' + error.message, 'error');
-    }
-  };
-
-  const changePassword = async (userId: number, passwordData: any) => {
-    try {
-      await apiPost(`/admin/users/${userId}/change-password`, passwordData);
-      showSnackbar('Password changed successfully!', 'success');
-      setPasswordDialogOpen(false);
-    } catch (error: any) {
-      showSnackbar('Failed to change password: ' + error.message, 'error');
-    }
-  };
-
-  // Helper functions
-  const showSnackbar = (message: string, severity: 'success' | 'error') => {
-    setSnackbar({ open: true, message, severity });
-  };
-
-  const closeSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  const openCreateDialog = () => {
-    setFormMode('create');
-    setFormData({
-      username: '',
-      password: '',
-      full_name: '',
-      email: '',
-      role: 'viewer',
-      site_access: [],
-      is_active: true
-    });
     setDialogOpen(true);
-  };
-
-  const openEditDialog = (user: User) => {
-    setFormMode('edit');
-    setSelectedUser(user);
-    
-    // Parse site_access if it's a string
-    let siteAccessArray: string[] = [];
-    if (user.site_access) {
-      if (typeof user.site_access === 'string') {
-        try {
-          siteAccessArray = JSON.parse(user.site_access);
-        } catch {
-          siteAccessArray = user.site_access.split(',').map(s => s.trim());
-        }
-      } else {
-        siteAccessArray = user.site_access;
-      }
-    }
-
-    setFormData({
-      username: user.username,
-      password: '',
-      full_name: user.full_name || '',
-      email: user.email || '',
-      role: user.role,
-      site_access: siteAccessArray,
-      is_active: user.is_active
-    });
-    setDialogOpen(true);
-  };
-
-  const closeDialog = () => {
-    setDialogOpen(false);
-    setSelectedUser(null);
     setShowPassword(false);
   };
 
-  const openPasswordDialog = (user: User) => {
-    setSelectedUser(user);
-    setPasswordForm({
-      current_password: '',
-      new_password: '',
-      confirm_password: ''
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setEditingUser(null);
+    setFormData({
+      username: '',
+      password: '',
+      email: '',
+      full_name: '',
+      role: 'viewer',
+      is_active: true
     });
-    setPasswordDialogOpen(true);
+    setShowPassword(false);
   };
 
-  const openDeleteDialog = (user: User) => {
-    setSelectedUser(user);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    if (formMode === 'create') {
-      await createUser(formData);
-    } else if (selectedUser) {
-      const updateData = { ...formData };
-      // Don't send password if it's empty during edit
-      if (!updateData.password) {
-        delete (updateData as any).password;
+  const handleSubmit = () => {
+    if (editingUser) {
+      // When updating, only send password if it's not empty
+      const updateData: UserUpdate = {
+        email: formData.email || undefined,
+        full_name: formData.full_name || undefined,
+        role: formData.role,
+        is_active: formData.is_active
+      };
+      if (formData.password) {
+        updateData.password = formData.password;
       }
-      await updateUser(selectedUser.id, updateData);
+      updateMutation.mutate({ id: editingUser.id, data: updateData });
+    } else {
+      createMutation.mutate(formData);
     }
   };
 
-  const handlePasswordChange = async () => {
-    if (passwordForm.new_password !== passwordForm.confirm_password) {
-      showSnackbar('New passwords do not match', 'error');
-      return;
-    }
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
+    setDeleteConfirmOpen(true);
+  };
 
-    if (selectedUser) {
-      await changePassword(selectedUser.id, {
-        current_password: passwordForm.current_password,
-        new_password: passwordForm.new_password
-      });
+  const handleConfirmDelete = () => {
+    if (userToDelete) {
+      deleteMutation.mutate(userToDelete.id);
     }
   };
 
-  const formatSiteAccess = (siteAccess: string[] | string | null): string => {
-    if (!siteAccess) return 'None';
-    if (typeof siteAccess === 'string') {
-      try {
-        const parsed = JSON.parse(siteAccess);
-        return Array.isArray(parsed) ? parsed.join(', ') : siteAccess;
-      } catch {
-        return siteAccess;
-      }
+  const getRoleIcon = (role: string) => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return <AdminIcon sx={{ color: '#f44336', fontSize: 18 }} />;
+      case 'editor':
+        return <EditorIcon sx={{ color: '#ff9800', fontSize: 18 }} />;
+      case 'viewer':
+        return <ViewerIcon sx={{ color: '#4caf50', fontSize: 18 }} />;
+      default:
+        return <ViewerIcon sx={{ color: '#2196f3', fontSize: 18 }} />;
     }
-    return Array.isArray(siteAccess) ? siteAccess.join(', ') : 'None';
   };
 
-  const getRoleLabel = (roleValue: string): string => {
-    const role = roles.find(r => r.value === roleValue);
-    return role ? role.label : roleValue;
+  const getRoleColor = (role: string): "error" | "warning" | "success" | "default" => {
+    switch (role.toLowerCase()) {
+      case 'admin': return 'error';
+      case 'editor': return 'warning';
+      case 'viewer': return 'success';
+      default: return 'default';
+    }
   };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const getRoleDisplayName = (roleName: string) => {
+    const role = roles.find(r => r.name === roleName);
+    return role?.display_name || roleName;
+  };
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          การจัดการผู้ใช้
-        </Typography>
-        <Box>
-          <Tooltip title="รีเฟรชข้อมูล">
-            <IconButton onClick={loadUsers} sx={{ mr: 1 }}>
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={openCreateDialog}
-          >
-            เพิ่มผู้ใช้
-          </Button>
-        </Box>
-      </Box>
+    <>
+      <Card elevation={0}>
+        <CardHeader
+          avatar={<PeopleIcon color="primary" />}
+          title="จัดการผู้ใช้ (User Management)"
+          subheader="จัดการผู้ใช้งานระบบและกำหนดบทบาท"
+          action={
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="รีเฟรช">
+                <IconButton onClick={() => refetch()} disabled={usersLoading}>
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenDialog()}
+              >
+                เพิ่มผู้ใช้
+              </Button>
+            </Box>
+          }
+        />
+        <CardContent>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              เกิดข้อผิดพลาดในการโหลดข้อมูล: {(error as Error).message}
+            </Alert>
+          )}
 
-      {/* Users Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ชื่อผู้ใช้</TableCell>
-              <TableCell>ชื่อเต็ม</TableCell>
-              <TableCell>อีเมล</TableCell>
-              <TableCell>บทบาท</TableCell>
-              <TableCell>สิทธิ์เข้าถึงไซต์</TableCell>
-              <TableCell>สถานะ</TableCell>
-              <TableCell>วันที่สร้าง</TableCell>
-              <TableCell>การดำเนินการ</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.username}</TableCell>
-                <TableCell>{user.full_name || '-'}</TableCell>
-                <TableCell>{user.email || '-'}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={getRoleLabel(user.role)}
-                    color={user.role === 'admin' ? 'error' : user.role === 'analyst' ? 'warning' : 'default'}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>{formatSiteAccess(user.site_access)}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={user.is_active ? 'ใช้งาน' : 'ไม่ใช้งาน'}
-                    color={user.is_active ? 'success' : 'default'}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  {new Date(user.created_at).toLocaleDateString('th-TH')}
-                </TableCell>
-                <TableCell>
-                  <Tooltip title="แก้ไข">
-                    <IconButton size="small" onClick={() => openEditDialog(user)}>
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="เปลี่ยนรหัสผ่าน">
-                    <IconButton size="small" onClick={() => openPasswordDialog(user)}>
-                      <KeyIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="ลบ">
-                    <IconButton 
-                      size="small" 
-                      color="error"
-                      onClick={() => openDeleteDialog(user)}
-                      disabled={user.username === 'admin'} // Prevent deleting admin
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+          {usersLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <TableContainer component={Paper} variant="outlined">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>ชื่อผู้ใช้</TableCell>
+                    <TableCell>ชื่อ-นามสกุล</TableCell>
+                    <TableCell>อีเมล</TableCell>
+                    <TableCell align="center">บทบาท</TableCell>
+                    <TableCell align="center">สถานะ</TableCell>
+                    <TableCell align="center">การจัดการ</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {users && users.length > 0 ? (
+                    users.map((user) => (
+                      <TableRow key={user.id} hover>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="medium">
+                            {user.username}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{user.full_name || '-'}</TableCell>
+                        <TableCell>{user.email || '-'}</TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            icon={getRoleIcon(user.role)}
+                            label={getRoleDisplayName(user.role)}
+                            size="small"
+                            color={getRoleColor(user.role)}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={user.is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
+                            size="small"
+                            color={user.is_active ? 'success' : 'default'}
+                            variant={user.is_active ? 'filled' : 'outlined'}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Tooltip title="แก้ไข">
+                            <IconButton size="small" onClick={() => handleOpenDialog(user)}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="ลบ">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDeleteClick(user)}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">
+                        <Typography color="text.secondary">ไม่มีข้อมูลผู้ใช้</Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Create/Edit User Dialog */}
-      <Dialog open={dialogOpen} onClose={closeDialog} maxWidth="md" fullWidth>
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {formMode === 'create' ? 'สร้างผู้ใช้ใหม่' : 'แก้ไขผู้ใช้'}
+          {editingUser ? 'แก้ไขผู้ใช้' : 'เพิ่มผู้ใช้ใหม่'}
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 1 }}>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
-              fullWidth
-              label="ชื่อผู้ใช้"
+              label="ชื่อผู้ใช้ (Username)"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              margin="normal"
               required
-              disabled={formMode === 'edit'}
+              fullWidth
+              disabled={!!editingUser}
+              helperText={editingUser ? "ไม่สามารถแก้ไขชื่อผู้ใช้ได้" : ""}
             />
             
-            {formMode === 'create' && (
-              <Box sx={{ position: 'relative' }}>
-                <TextField
-                  fullWidth
-                  label="รหัสผ่าน"
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  margin="normal"
-                  required
-                />
-                <IconButton
-                  sx={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <VisibilityOffIcon /> : <ViewIcon />}
-                </IconButton>
-              </Box>
-            )}
-
             <TextField
+              label={editingUser ? "รหัสผ่านใหม่ (เว้นว่างหากไม่ต้องการเปลี่ยน)" : "รหัสผ่าน"}
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              required={!editingUser}
               fullWidth
-              label="ชื่อเต็ม"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
+            
+            <TextField
+              label="ชื่อ-นามสกุล"
               value={formData.full_name}
               onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              margin="normal"
-            />
-
-            <TextField
               fullWidth
+            />
+            
+            <TextField
               label="อีเมล"
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              margin="normal"
+              fullWidth
             />
-
-            <FormControl fullWidth margin="normal">
-              <InputLabel>บทบาท</InputLabel>
+            
+            <FormControl fullWidth required>
+              <InputLabel>บทบาท (Role)</InputLabel>
               <Select
                 value={formData.role}
-                label="บทบาท"
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                label="บทบาท (Role)"
               >
                 {roles.map((role) => (
-                  <MenuItem key={role.value} value={role.value}>
-                    {role.label} - {role.description}
+                  <MenuItem key={role.id} value={role.name}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {getRoleIcon(role.name)}
+                      {role.display_name} (Level: {role.level})
+                    </Box>
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-
-            <TextField
-              fullWidth
-              label="สิทธิ์เข้าถึงไซต์ (คั่นด้วยเครื่องหมายจุลภาค)"
-              value={formData.site_access.join(', ')}
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                site_access: e.target.value.split(',').map(s => s.trim()).filter(s => s) 
-              })}
-              margin="normal"
-              helperText="ใส่รหัสไซต์คั่นด้วยเครื่องหมายจุลภาค (เช่น DC, DR, TEST)"
-            />
-
+            
             <FormControlLabel
               control={
                 <Switch
@@ -490,90 +439,48 @@ export const UserManagement: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                 />
               }
-              label="ใช้งาน"
-              sx={{ mt: 2 }}
+              label="เปิดใช้งาน"
             />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeDialog}>ยกเลิก</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {formMode === 'create' ? 'สร้าง' : 'อัปเดต'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Change Password Dialog */}
-      <Dialog open={passwordDialogOpen} onClose={() => setPasswordDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>เปลี่ยนรหัสผ่านสำหรับ {selectedUser?.username}</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="รหัสผ่านปัจจุบัน"
-            type="password"
-            value={passwordForm.current_password}
-            onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="รหัสผ่านใหม่"
-            type="password"
-            value={passwordForm.new_password}
-            onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="ยืนยันรหัสผ่านใหม่"
-            type="password"
-            value={passwordForm.confirm_password}
-            onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
-            margin="normal"
-            required
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPasswordDialogOpen(false)}>ยกเลิก</Button>
-          <Button onClick={handlePasswordChange} variant="contained">
-            เปลี่ยนรหัสผ่าน
+          <Button onClick={handleCloseDialog}>ยกเลิก</Button>
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained" 
+            disabled={createMutation.isPending || updateMutation.isPending}
+          >
+            {(createMutation.isPending || updateMutation.isPending) ? (
+              <CircularProgress size={24} />
+            ) : (
+              editingUser ? 'บันทึก' : 'เพิ่ม'
+            )}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
         <DialogTitle>ยืนยันการลบ</DialogTitle>
         <DialogContent>
           <Typography>
-            คุณแน่ใจหรือไม่ที่ต้องการลบผู้ใช้ "{selectedUser?.username}"?
-            การดำเนินการนี้ไม่สามารถย้อนกลับได้
+            คุณต้องการลบผู้ใช้ "{userToDelete?.username}" ใช่หรือไม่?
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>ยกเลิก</Button>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>ยกเลิก</Button>
           <Button 
-            onClick={() => selectedUser && deleteUser(selectedUser.id)} 
-            color="error"
+            onClick={handleConfirmDelete} 
+            color="error" 
             variant="contained"
+            disabled={deleteMutation.isPending}
           >
-            ลบ
+            {deleteMutation.isPending ? <CircularProgress size={24} /> : 'ลบ'}
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={closeSnackbar}
-      >
-        <Alert onClose={closeSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+    </>
   );
 };
+
+export default UserManagement;

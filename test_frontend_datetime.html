@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทดสอบ Frontend DateTime Conversion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .test-item {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        
+        .test-item.pass {
+            border-left-color: #28a745;
+            background: #f0f8f4;
+        }
+        
+        .test-item.fail {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .test-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .test-detail {
+            font-size: 14px;
+            color: #666;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .badge.pass {
+            background: #28a745;
+            color: white;
+        }
+        
+        .badge.fail {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 15px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .instructions {
+            background: #fff9e6;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .instructions h3 {
+            color: #ff6f00;
+            margin-bottom: 15px;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        .code {
+            background: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🧪 ทดสอบ Frontend DateTime Conversion</h1>
+            <p class="subtitle">ทดสอบฟังก์ชัน toBangkokTime ที่ใช้ใน ImprovedMetricsPage.tsx</p>
+            
+            <div id="results"></div>
+            
+            <div class="summary" id="summary"></div>
+            
+            <div class="instructions">
+                <h3>💡 วิธีแก้ปัญหาหากยังแสดงเวลาผิด:</h3>
+                <ol>
+                    <li><strong>ล้าง Browser Cache:</strong>
+                        <ul>
+                            <li>กด <span class="code">Ctrl + Shift + Delete</span></li>
+                            <li>เลือก "Cached images and files"</li>
+                            <li>กด "Clear data"</li>
+                        </ul>
+                    </li>
+                    <li><strong>Hard Refresh:</strong> กด <span class="code">Ctrl + Shift + R</span></li>
+                    <li><strong>หรือเปิด Incognito:</strong> กด <span class="code">Ctrl + Shift + N</span> (Chrome) หรือ <span class="code">Ctrl + Shift + P</span> (Firefox)</li>
+                </ol>
+                
+                <h3 style="margin-top: 20px;">📊 ข้อมูลที่ควรแสดง:</h3>
+                <ul>
+                    <li>ข้อมูลล่าสุดในฐานข้อมูล: <strong>2026-01-22 12:00:00</strong></li>
+                    <li>แปลงเป็น: <strong>22/1/2569 12:00:00</strong></li>
+                    <li>หากยังแสดง 06:00:00 แสดงว่ายังใช้ cache เก่า</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // จำลอง toBangkokTime function จาก dateUtils.ts
+        function toBangkokTime(dateString) {
+            if (!dateString) return '-';
+
+            try {
+                // ถ้าเป็น string ให้พยายาม parse แบบไม่แปลง timezone
+                if (typeof dateString === 'string') {
+                    const match = dateString.match(
+                        /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/i
+                    );
+
+                    if (match) {
+                        const year = Number(match[1]);
+                        const month = Number(match[2]);
+                        const day = Number(match[3]);
+                        const hour = match[4];
+                        const minute = match[5];
+                        const second = match[6] ?? '00';
+
+                        // ใช้ปีพุทธศักราช (+543)
+                        const buddhistYear = year + 543;
+                        return `${day}/${month}/${buddhistYear} ${hour}:${minute}:${second}`;
+                    }
+                }
+
+                const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+
+                if (isNaN(date.getTime())) {
+                    return String(dateString);
+                }
+
+                // Fallback: บังคับใช้ Bangkok timezone
+                return date.toLocaleString('th-TH', {
+                    timeZone: 'Asia/Bangkok',
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                });
+            } catch (error) {
+                console.error('Error converting date to Bangkok time:', error);
+                return String(dateString || '-');
+            }
+        }
+
+        // Test cases
+        const testCases = [
+            {
+                name: 'ข้อมูลล่าสุดจาก Database (12:00)',
+                input: '2026-01-22T12:00:00+07:00',
+                expected: '22/1/2569 12:00:00',
+                description: 'ข้อมูลล่าสุดที่มีในฐานข้อมูล'
+            },
+            {
+                name: 'ข้อมูลเก่าที่แสดงในภาพ (06:00)',
+                input: '2026-01-22T06:00:00+07:00',
+                expected: '22/1/2569 06:00:00',
+                description: 'ข้อมูลเก่าที่ยังอยู่ใน cache'
+            },
+            {
+                name: 'ข้อมูลไม่มี timezone',
+                input: '2026-01-22T09:00:00',
+                expected: '22/1/2569 09:00:00',
+                description: 'ISO format โดยไม่มี timezone'
+            },
+            {
+                name: 'ข้อมูลมี Z (UTC)',
+                input: '2026-01-22T05:00:00Z',
+                expected: '22/1/2569 05:00:00',
+                description: 'UTC time with Z suffix'
+            },
+            {
+                name: 'Format มี space แทน T',
+                input: '2026-01-22 11:10:00',
+                expected: '22/1/2569 11:10:00',
+                description: 'Space-separated format'
+            },
+            {
+                name: 'เวลาปัจจุบัน',
+                input: new Date().toISOString().replace('Z', '+07:00'),
+                expected: null,
+                description: 'ทดสอบกับเวลาปัจจุบัน'
+            }
+        ];
+
+        // Run tests
+        let passCount = 0;
+        let failCount = 0;
+        const resultsDiv = document.getElementById('results');
+
+        testCases.forEach((test, index) => {
+            const result = toBangkokTime(test.input);
+            const passed = test.expected ? result === test.expected : true;
+            
+            if (passed && test.expected) passCount++;
+            else if (test.expected) failCount++;
+
+            const testDiv = document.createElement('div');
+            testDiv.className = `test-item ${passed && test.expected ? 'pass' : test.expected ? 'fail' : ''}`;
+            testDiv.innerHTML = `
+                <div class="test-name">
+                    ${test.name}
+                    ${test.expected ? `<span class="badge ${passed ? 'pass' : 'fail'}">${passed ? '✅ PASS' : '❌ FAIL'}</span>` : ''}
+                </div>
+                <div class="test-detail"><strong>Input:</strong> ${test.input}</div>
+                <div class="test-detail"><strong>Output:</strong> ${result}</div>
+                ${test.expected ? `<div class="test-detail"><strong>Expected:</strong> ${test.expected}</div>` : ''}
+                <div class="test-detail" style="color: #888; margin-top: 5px;">${test.description}</div>
+            `;
+            resultsDiv.appendChild(testDiv);
+        });
+
+        // Summary
+        const totalTests = testCases.filter(t => t.expected).length;
+        const summaryDiv = document.getElementById('summary');
+        summaryDiv.innerHTML = `
+            <h2>📊 ผลการทดสอบ</h2>
+            <div class="summary-stats">
+                <div class="stat">
+                    <div class="stat-value">${passCount}/${totalTests}</div>
+                    <div class="stat-label">✅ PASS</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${failCount}/${totalTests}</div>
+                    <div class="stat-label">❌ FAIL</div>
+                </div>
+            </div>
+            <p style="margin-top: 15px; font-size: 16px;">
+                ${failCount === 0 ? '🎉 โค้ดทำงานถูกต้อง! หากยังแสดงเวลาผิดใน metrics page ให้ clear browser cache' : '⚠️ พบปัญหาในการแปลงเวลา'}
+            </p>
+        `;
+
+        // Log to console
+        console.log('='.repeat(80));
+        console.log('🧪 Frontend DateTime Conversion Test Results');
+        console.log('='.repeat(80));
+        console.log(`✅ Pass: ${passCount}/${totalTests}`);
+        console.log(`❌ Fail: ${failCount}/${totalTests}`);
+        console.log('='.repeat(80));
+    </script>
+</body>
+</html>

@@ -64,11 +64,59 @@ export interface FaultResponse {
 }
 
 export interface KPIResponse {
+  total_sites: number;
+  total_equipment: number;
+  total_metrics: number;
+  data_points: number;
+  avg_values: { [key: string]: number };
+  site_comparison: { [key: string]: { equipment_count: number; avg_temperature: number } };
+}
+
+// Sensor Data Interfaces
+export interface SensorMetric {
+  value: number | null;
+  unit: string | null;
+  time: string | null;
+}
+
+export interface SensorData {
+  equipment_id: string;
+  equipment_name: string;
   site_code: string;
-  from_time: string;
-  to_time: string;
-  metrics: Record<string, any>;
-  summary: string;
+  temperature: SensorMetric | null;
+  humidity: SensorMetric | null;
+  power: SensorMetric | null;
+  current: SensorMetric | null;
+  last_updated: string | null;
+  status: 'healthy' | 'warning' | 'critical' | 'no_data';
+}
+
+export interface DashboardRow {
+  label: string;
+  equipment_id: string;
+  equipment_name: string;
+  type: 'sensor' | 'cooling' | 'ups' | 'power';
+  site_code: string;
+  temperature: SensorMetric | null;
+  humidity: SensorMetric | null;
+  power: SensorMetric | null;
+  current: SensorMetric | null;
+  last_updated: string | null;
+  status: 'healthy' | 'warning' | 'critical' | 'no_data';
+}
+
+export interface DashboardData {
+  site: string;
+  rows: {
+    A: DashboardRow[];
+    B: DashboardRow[];
+  };
+  last_updated: string;
+}
+
+export interface SensorStatusSummary {
+  DC: { online: number; warning: number; offline: number };
+  DR: { online: number; warning: number; offline: number };
 }
 
 export interface AuthResponse {
@@ -90,7 +138,21 @@ class ApiClient {
 
   constructor() {
     this.baseUrl = API_BASE;
-    this.token = localStorage.getItem('auth_token');
+    // Try multiple token keys for compatibility
+    this.token = localStorage.getItem('auth_token') || 
+                 localStorage.getItem('token') || 
+                 (() => {
+                   const authData = localStorage.getItem('ecc800-auth');
+                   if (authData) {
+                     try {
+                       const parsed = JSON.parse(authData);
+                       return parsed.state?.token || parsed.token;
+                     } catch {
+                       return null;
+                     }
+                   }
+                   return null;
+                 })();
   }
 
   setToken(token: string) {
@@ -249,6 +311,20 @@ class ApiClient {
   }): Promise<KPIResponse> {
     const query = new URLSearchParams(params);
     return this.request<KPIResponse>(`/reports/kpi?${query}`);
+  }
+
+  // Sensor API endpoints
+  async getSensorLatestData(site?: string): Promise<{ data: SensorData[]; timestamp: string }> {
+    const params = site ? `?site=${site}` : '';
+    return this.request<{ data: SensorData[]; timestamp: string }>(`/sensor/latest${params}`);
+  }
+
+  async getSensorDashboardData(site: 'dc' | 'dr'): Promise<{ data: DashboardData; timestamp: string }> {
+    return this.request<{ data: DashboardData; timestamp: string }>(`/sensor/dashboard?site=${site}`);
+  }
+
+  async getSensorStatusSummary(): Promise<{ data: SensorStatusSummary; timestamp: string }> {
+    return this.request<{ data: SensorStatusSummary; timestamp: string }>('/sensor/status');
   }
 
   // Health Check

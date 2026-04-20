@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -30,6 +30,7 @@ import {
   InputLabel,
   Skeleton,
   InputAdornment,
+  Snackbar,
 } from '@mui/material';
 import {
   Timeline,
@@ -59,7 +60,8 @@ import TimeSeriesChart from '../components/TimeSeriesChart';
 import MetricChart from '../components/MetricChart';
 import AdvancedMetricAnalysis from '../components/AdvancedMetricAnalysis';
 import { apiGet } from '../lib/api';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toBangkokTime, toBangkokDate } from '../lib/dateUtils';
 
 // Types
 interface MetricInfo {
@@ -146,10 +148,199 @@ interface DetailedMetric {
   chart_config: ChartConfig;
 }
 
+const ICON_COMPONENTS: Record<string, React.ElementType> = {
+  '🌡️': Thermostat,
+  '💧': Opacity,
+  '⚡': ElectricBolt,
+  '🔌': ElectricBolt,
+  '🔋': Battery90,
+  '📊': Assessment,
+  '🚦': Sensors,
+  '📈': ShowChart,
+};
+
+const TREND_ICON_META: Record<string, { Icon: typeof TrendingFlat; color: 'success' | 'error' | 'info' | 'disabled' }> = {
+  increasing: { Icon: TrendingUp, color: 'success' },
+  decreasing: { Icon: TrendingDown, color: 'error' },
+  stable: { Icon: TrendingFlat, color: 'info' },
+  unknown: { Icon: TrendingFlat, color: 'disabled' },
+};
+
+const TREND_LABELS: Record<string, string> = {
+  increasing: 'เพิ่มขึ้น',
+  decreasing: 'ลดลง',
+  stable: 'คงที่',
+  unknown: 'ไม่ทราบแนวโน้ม',
+};
+
+const formatMetricValue = (value: number | null | undefined, unit: string) => {
+  if (value === undefined || value === null || Number.isNaN(value)) {
+    return 'N/A';
+  }
+  const safeUnit = String(unit || '');
+  return `${value.toFixed(2)} ${safeUnit}`;
+};
+
+interface MetricCardProps {
+  metric: MetricInfo;
+  onClick: (metricName: string) => void;
+}
+
+const MetricCardComponent: React.FC<MetricCardProps> = ({ metric, onClick }) => {
+  const theme = useTheme();
+  
+  // Safely get icon component with fallback
+  const icon = String(metric.icon || '📊');
+  const IconComponent = ICON_COMPONENTS[icon] || Timeline;
+  
+  // Safely get trend info with fallback
+  const trend = String(metric.trend || 'unknown');
+  const trendInfo = TREND_ICON_META[trend] || TREND_ICON_META.unknown;
+  const TrendIcon = trendInfo.Icon;
+  const trendColor = trendInfo.color;
+  const trendLabel = TREND_LABELS[trend] || TREND_LABELS.unknown;
+  
+  // Safely get color with fallback
+  const accentColor = metric.color || theme.palette.primary.main;
+
+  const handleCardClick = useCallback(() => onClick(metric.metric_name), [metric.metric_name, onClick]);
+
+  const latestDisplay = useMemo(() => {
+    if (metric.latest_value === undefined || metric.latest_value === null) {
+      return null;
+    }
+    return formatMetricValue(metric.latest_value, metric.unit);
+  }, [metric.latest_value, metric.unit]);
+
+  const latestTimestamp = useMemo(() => {
+    if (!metric.latest_time) return null;
+    return toBangkokTime(metric.latest_time);
+  }, [metric.latest_time]);
+
+  const rangeDisplay = useMemo(() => {
+    if (
+      metric.min_value === undefined ||
+      metric.min_value === null ||
+      metric.max_value === undefined ||
+      metric.max_value === null
+    ) {
+      return null;
+    }
+    return `${formatMetricValue(metric.min_value, metric.unit)} - ${formatMetricValue(metric.max_value, metric.unit)}`;
+  }, [metric.max_value, metric.min_value, metric.unit]);
+
+  return (
+    <Card
+      sx={{
+        height: '100%',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        border: `1px solid ${alpha(accentColor, 0.3)}`,
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: `0 8px 25px ${alpha(accentColor, 0.3)}`,
+          borderColor: accentColor,
+        },
+      }}
+      onClick={handleCardClick}
+    >
+      <CardContent>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+          <Avatar sx={{ bgcolor: alpha(accentColor, 0.1), color: accentColor }}>
+            <IconComponent />
+          </Avatar>
+          <Box textAlign="right">
+            <Chip size="small" label={String(metric.valid_readings?.toLocaleString() || '0')} title="จำนวนข้อมูลที่ถูกต้อง" />
+          </Box>
+        </Box>
+
+        <Typography variant="h6" noWrap title={String(metric.metric_name)} gutterBottom>
+          {String(metric.display_name || metric.metric_name || 'Unknown')}
+        </Typography>
+
+        <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+          หน่วย: {String(metric.unit || 'N/A')}
+        </Typography>
+
+        {latestDisplay ? (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h4" color="primary" fontWeight="bold">
+              {latestDisplay}
+            </Typography>
+            <Box display="flex" alignItems="center" gap={1} mb={1}>
+              <TrendIcon color={trendColor} />
+              <Typography variant="caption" color="textSecondary">
+                {trendLabel}
+              </Typography>
+            </Box>
+            {latestTimestamp && (
+              <Typography variant="caption" color="textSecondary" display="block">
+                อัพเดต: {latestTimestamp}
+              </Typography>
+            )}
+          </Box>
+        ) : (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h4" color="textSecondary" fontWeight="bold">
+              ไม่มีข้อมูล
+            </Typography>
+            <Typography variant="caption" color="textSecondary">
+              ยังไม่มีค่าล่าสุด
+            </Typography>
+          </Box>
+        )}
+
+        <Box sx={{ mb: 2 }}>
+          {metric.avg_value !== undefined && metric.avg_value !== null && (
+            <Typography variant="body2" color="textSecondary" display="block" sx={{ mb: 0.5 }}>
+              📊 เฉลี่ย: <strong>{formatMetricValue(metric.avg_value, metric.unit)}</strong>
+            </Typography>
+          )}
+
+          {rangeDisplay && (
+            <Typography variant="body2" color="textSecondary" display="block" sx={{ mb: 0.5 }}>
+              📈 ช่วง: {rangeDisplay}
+            </Typography>
+          )}
+
+          <Typography variant="body2" color="success.main" display="block" sx={{ mb: 0.5 }}>
+            ✅ ข้อมูลถูกต้อง: <strong>{String(metric.valid_readings?.toLocaleString() || '0')}</strong> จุด
+          </Typography>
+
+          <Typography variant="body2" color="info.main" display="block">
+            📦 ข้อมูลทั้งหมด: <strong>{String(metric.data_points?.toLocaleString() || '0')}</strong> จุด
+          </Typography>
+        </Box>
+
+        <Divider sx={{ my: 1 }} />
+
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="caption" color="textSecondary">
+            {metric.first_seen && metric.last_seen
+              ? `ช่วงข้อมูล: ${toBangkokDate(metric.first_seen)} - ${toBangkokDate(metric.last_seen)}`
+              : 'ไม่มีข้อมูลช่วงเวลา'}
+          </Typography>
+          <IconButton
+            size="small"
+            color="primary"
+            sx={{
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) },
+            }}
+          >
+            <ShowChart />
+          </IconButton>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
+const MetricCard = MetricCardComponent;
+
 const ImprovedMetricsPage: React.FC = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
+  const queryClient = useQueryClient();
 
   // States
   const [selectedSite, setSelectedSite] = useState<string>('');
@@ -166,24 +357,24 @@ const ImprovedMetricsPage: React.FC = () => {
   const [detailDialogOpen, setDetailDialogOpen] = useState<boolean>(false);
   const [selectedDetailMetric, setSelectedDetailMetric] = useState<string>('');
   const [exporting, setExporting] = useState<boolean>(false);
-
-  // Check authentication
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'warning' | 'info' }>({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
 
   // Fetch data
-  // Lazily load sites only when user interacts with the site selector
-  const [sitesEnabled, setSitesEnabled] = useState<boolean>(false);
-  const { data: sites, isLoading: sitesLoading } = useSites({ enabled: sitesEnabled });
+  // Auto-enable sites loading on mount to prevent race condition
+  const [sitesEnabled, setSitesEnabled] = useState<boolean>(true);
+  const { data: sites, isLoading: sitesLoading, error: sitesError } = useSites({ enabled: sitesEnabled });
   
-  // Fetch equipment for selected site
+  // Fetch equipment for selected site with aggressive caching
   const { data: equipment, isLoading: equipmentLoading } = useQuery({
     queryKey: ['site-equipment', selectedSite],
     queryFn: () => apiGet<Equipment[]>(`/sites/${selectedSite}/equipment`),
     enabled: !!selectedSite,
+    staleTime: 10 * 60 * 1000, // 10 minutes - equipment rarely changes
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
   });
 
   // Enhanced metrics data - only fetch when equipment is selected
@@ -203,10 +394,13 @@ const ImprovedMetricsPage: React.FC = () => {
         params.start_time = appliedStartDate;
         params.end_time = appliedEndDate;
       }
+      params._ts = Date.now();
       return apiGet<MetricsResponse>('/enhanced-metrics', params);
     },
     enabled: !!(selectedSite && selectedEquipment), // Only fetch when both site and equipment are selected
     refetchInterval: autoRefresh ? 30000 : false,
+    staleTime: 0, // ข้อมูลเก่าทันที บังคับ refetch
+    gcTime: 0, // ไม่เก็บ cache (gcTime แทน cacheTime ใน react-query v5)
     retry: 2,
   });
 
@@ -215,6 +409,7 @@ const ImprovedMetricsPage: React.FC = () => {
     queryKey: ['metric-details', selectedDetailMetric, selectedSite, selectedEquipment, period, appliedStartDate, appliedEndDate],
     queryFn: () => {
       const params: any = {
+        metric_name: selectedDetailMetric,
         site_code: selectedSite,
         equipment_id: selectedEquipment,
         period: period,
@@ -223,9 +418,12 @@ const ImprovedMetricsPage: React.FC = () => {
         params.start_time = appliedStartDate;
         params.end_time = appliedEndDate;
       }
-      return apiGet<DetailedMetric>(`/metric/${encodeURIComponent(selectedDetailMetric)}/details`, params);
+      params._ts = Date.now();
+      return apiGet<DetailedMetric>('/metric/details', params);
     },
     enabled: !!(selectedDetailMetric && selectedSite && selectedEquipment),
+    staleTime: 0, // ข้อมูลเก่าทันที บังคับ refetch
+    gcTime: 0, // ไม่เก็บ cache
   });
 
   // Auto-refresh effect
@@ -259,49 +457,35 @@ const ImprovedMetricsPage: React.FC = () => {
     }
   }, [period]);
 
-  // Helper functions
-  const getIconComponent = (iconStr: string) => {
-    const iconMap: Record<string, React.ReactElement> = {
-      '🌡️': <Thermostat />,
-      '💧': <Opacity />,
-      '⚡': <ElectricBolt />,
-      '🔌': <ElectricBolt />,
-      '🔋': <Battery90 />,
-      '📊': <Assessment />,
-      '🚦': <Sensors />,
-      '📈': <ShowChart />,
-    };
-    return iconMap[iconStr] || <Timeline />;
-  };
-
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'increasing':
-        return <TrendingUp color="success" />;
-      case 'decreasing':
-        return <TrendingDown color="error" />;
-      case 'stable':
-        return <TrendingFlat color="info" />;
-      default:
-        return <TrendingFlat color="disabled" />;
+  // Prefetch equipment when user opens site dropdown
+  const handleSiteDropdownOpen = useCallback(() => {
+    // If we have sites, prefetch equipment for each site to make dropdown loading instant
+    if (sites && sites.length > 0) {
+      sites.forEach(site => {
+        queryClient.prefetchQuery({
+          queryKey: ['site-equipment', site.site_code],
+          queryFn: () => apiGet<Equipment[]>(`/sites/${site.site_code}/equipment`),
+          staleTime: 10 * 60 * 1000,
+        });
+      });
     }
-  };
+  }, [sites, queryClient]);
 
-  const formatValue = (value: number | undefined, unit: string) => {
-    if (value === undefined || value === null) return 'N/A';
-    return `${value.toFixed(2)} ${unit}`;
-  };
-
-  const handleMetricClick = (metricName: string) => {
+  // Helper functions
+  const handleMetricClick = useCallback((metricName: string) => {
     if (!selectedEquipment) {
-      alert('กรุณาเลือกอุปกรณ์ก่อนดูรายละเอียดเมตริก');
+      setSnackbar({
+        open: true,
+        message: 'กรุณาเลือกอุปกรณ์ก่อนดูรายละเอียดเมตริก',
+        severity: 'warning'
+      });
       return;
     }
     
     // Now enable the dialog since we've improved the API
     setSelectedDetailMetric(metricName);
     setDetailDialogOpen(true);
-  };
+  }, [selectedEquipment]);
 
   // Handle site selection
   const handleSiteChange = (siteCode: string) => {
@@ -317,20 +501,77 @@ const ImprovedMetricsPage: React.FC = () => {
   };
 
   // Filter metrics based on selected metric filter
-  const filteredMetrics = metricsData?.metrics.filter(metric => {
-    if (!selectedMetricFilter) return true;
-    return metric.metric_name.toLowerCase().includes(selectedMetricFilter.toLowerCase()) ||
-           metric.display_name.toLowerCase().includes(selectedMetricFilter.toLowerCase());
-  }) || [];
+  const filteredMetrics = useMemo(() => {
+    const metrics = metricsData?.metrics ?? [];
+    if (!selectedMetricFilter) {
+      return metrics;
+    }
+    const query = selectedMetricFilter.toLowerCase();
+    return metrics.filter((metric) => {
+      const name = metric.metric_name?.toLowerCase?.() ?? '';
+      const display = metric.display_name?.toLowerCase?.() ?? '';
+      return name.includes(query) || display.includes(query);
+    });
+  }, [metricsData, selectedMetricFilter]);
 
-  // Loading state
+  // IMPORTANT: These hooks MUST be called before any conditional returns
+  // to comply with React's Rules of Hooks
+  const selectedSiteInfo = useMemo(() => {
+    if (!sites || !selectedSite) return undefined;
+    return sites.find((s) => s.site_code === selectedSite);
+  }, [sites, selectedSite]);
+
+  const selectedEquipmentInfo = useMemo(() => {
+    if (!equipment || !selectedEquipment) return undefined;
+    return equipment.find((eq) => eq.equipment_id === selectedEquipment);
+  }, [equipment, selectedEquipment]);
+
+  // Loading state - wait for sites to load completely
   if (sitesLoading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh" flexDirection="column">
           <CircularProgress size={60} />
-          <Typography variant="h6" sx={{ ml: 3 }}>
+          <Typography variant="h6" sx={{ ml: 3, mt: 2 }}>
             กำลังโหลดข้อมูลระบบ...
+          </Typography>
+          <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+            กำลังโหลดรายการไซต์และอุปกรณ์
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  // Error state - show error if sites failed to load
+  if (sitesError) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh" flexDirection="column">
+          <Typography variant="h6" color="error" sx={{ mb: 2 }}>
+            ⚠️ ไม่สามารถโหลดข้อมูลระบบได้
+          </Typography>
+          <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+            {sitesError instanceof Error ? sitesError.message : 'Unknown error'}
+          </Typography>
+          <Button variant="contained" onClick={() => window.location.reload()}>
+            โหลดใหม่อีกครั้ง
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
+
+  // Ensure sites data exists
+  if (!sites || sites.length === 0) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh" flexDirection="column">
+          <Typography variant="h6" color="textSecondary" sx={{ mb: 2 }}>
+            📊 ไม่พบข้อมูลไซต์ในระบบ
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            กรุณาติดต่อผู้ดูแลระบบ
           </Typography>
         </Box>
       </Container>
@@ -370,17 +611,18 @@ const ImprovedMetricsPage: React.FC = () => {
                 <Select
                   value={selectedSite}
                   onChange={(e) => handleSiteChange(e.target.value)}
-                  // Trigger fetching sites only when the dropdown is opened/interacted
-                  onOpen={() => setSitesEnabled(true)}
-                  onFocus={() => setSitesEnabled(true)}
                   label="🏢 เลือกไซต์"
                 >
                   <MenuItem value="">-- เลือกไซต์ --</MenuItem>
-                  {sites?.map((site) => (
-                    <MenuItem key={site.site_code} value={site.site_code}>
-                      {site.site_name} ({site.site_code.toUpperCase()})
-                    </MenuItem>
-                  ))}
+                  {sites?.map((site) => {
+                    const siteName = String(site.site_name || site.site_code || 'Unknown');
+                    const siteCode = String(site.site_code || '').toUpperCase();
+                    return (
+                      <MenuItem key={site.site_code} value={site.site_code}>
+                        {siteName} ({siteCode})
+                      </MenuItem>
+                    );
+                  })}
                 </Select>
               </FormControl>
             </Grid>
@@ -399,13 +641,18 @@ const ImprovedMetricsPage: React.FC = () => {
                     <MenuItem disabled>กำลังโหลด...</MenuItem>
                   ) : (
                     equipment
-                      ?.sort((a: any, b: any) => (a.display_name || '').localeCompare(b.display_name || '', undefined, { numeric: true, sensitivity: 'base' }))
+                      ?.sort((a: any, b: any) => {
+                        const nameA = String(a.display_name || a.equipment_id || '');
+                        const nameB = String(b.display_name || b.equipment_id || '');
+                        return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+                      })
                       .map((eq) => {
-                        const rawName = eq.display_name || eq.equipment_id || '';
+                        const rawName = String(eq.display_name || eq.equipment_id || '');
                         const name = rawName.replace(/\(\s*\)/g, '').trim();
+                        const count = eq.metric_count != null ? String(eq.metric_count) : '';
                         return (
                           <MenuItem key={eq.equipment_id} value={eq.equipment_id}>
-                            {name}{eq.metric_count != null ? ` ${eq.metric_count}` : ''}
+                            {name}{count ? ` ${count}` : ''}
                           </MenuItem>
                         );
                       })
@@ -424,11 +671,15 @@ const ImprovedMetricsPage: React.FC = () => {
                   disabled={!selectedEquipment}
                 >
                   <MenuItem value="">-- แสดงเมตริกทั้งหมด --</MenuItem>
-                  {metricsData?.metrics.map((metric) => (
-                    <MenuItem key={metric.metric_name} value={metric.metric_name}>
-                      {metric.display_name} ({metric.unit})
-                    </MenuItem>
-                  ))}
+                  {metricsData?.metrics.map((metric) => {
+                    const displayName = String(metric.display_name || metric.metric_name || '');
+                    const unit = String(metric.unit || '');
+                    return (
+                      <MenuItem key={metric.metric_name} value={metric.metric_name}>
+                        {displayName} ({unit})
+                      </MenuItem>
+                    );
+                  })}
                 </Select>
               </FormControl>
             </Grid>
@@ -536,14 +787,14 @@ const ImprovedMetricsPage: React.FC = () => {
               <Stack direction="row" spacing={2} alignItems="center">
                 <Chip
                   icon={<Computer />}
-                  label={`ไซต์: ${sites?.find(s => s.site_code === selectedSite)?.site_name} (${selectedSite.toUpperCase()})`}
+                  label={`ไซต์: ${String(selectedSiteInfo?.site_name ?? selectedSite).toUpperCase()} (${String(selectedSite).toUpperCase()})`}
                   color="primary"
                   variant="filled"
                 />
                 {selectedEquipment && (
                   <Chip
                     icon={<Sensors />}
-                    label={`อุปกรณ์: ${equipment?.find(eq => eq.equipment_id === selectedEquipment)?.display_name}`}
+                    label={`อุปกรณ์: ${String(selectedEquipmentInfo?.display_name ?? selectedEquipment)}`}
                     color="secondary"
                     variant="filled"
                   />
@@ -551,7 +802,7 @@ const ImprovedMetricsPage: React.FC = () => {
                 {selectedEquipment && metricsData && (
                   <Chip
                     icon={<Assessment />}
-                    label={`${filteredMetrics.length}/${metricsData.total_count} เมตริก`}
+                    label={`${String(filteredMetrics.length || 0)}/${String(metricsData.total_count || 0)} เมตริก`}
                     color="success"
                     variant="outlined"
                   />
@@ -620,134 +871,20 @@ const ImprovedMetricsPage: React.FC = () => {
         ) : metricsData && filteredMetrics.length > 0 ? (
           <Box>
             <Typography variant="h5" gutterBottom fontWeight="bold">
-              📈 เมตริกที่เลือก ({filteredMetrics.length} จาก {metricsData.total_count} รายการ)
+              📈 เมตริกที่เลือก ({String(filteredMetrics.length || 0)} จาก {String(metricsData.total_count || 0)} รายการ)
             </Typography>
             <Typography variant="body2" color="textSecondary" gutterBottom sx={{ mb: 3 }}>
               {selectedEquipment
-                ? `แสดงเฉพาะเมตริกของอุปกรณ์: ${equipment?.find(eq => eq.equipment_id === selectedEquipment)?.display_name}`
+                ? `แสดงเฉพาะเมตริกของอุปกรณ์: ${String(selectedEquipmentInfo?.display_name ?? selectedEquipment)}`
                 : 'แสดงเมตริกทั้งหมดในไซต์'
               }
-              {selectedMetricFilter && ` - กรองด้วย: "${selectedMetricFilter}"`}
+              {selectedMetricFilter && ` - กรองด้วย: "${String(selectedMetricFilter)}"`}
             </Typography>
 
             <Grid container spacing={3}>
               {filteredMetrics.map((metric) => (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={metric.metric_name}>
-                  <Card
-                    sx={{
-                      height: '100%',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      border: `1px solid ${alpha(metric.color, 0.3)}`,
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: `0 8px 25px ${alpha(metric.color, 0.3)}`,
-                        borderColor: metric.color,
-                      },
-                    }}
-                    onClick={() => handleMetricClick(metric.metric_name)}
-                  >
-                    <CardContent>
-                      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                        <Avatar sx={{ bgcolor: alpha(metric.color, 0.1), color: metric.color }}>
-                          {getIconComponent(metric.icon)}
-                        </Avatar>
-                        <Box textAlign="right">
-                          <Chip 
-                            size="small" 
-                            label={`${metric.valid_readings.toLocaleString()}`}
-                            title="จำนวนข้อมูลที่ถูกต้อง"
-                          />
-                        </Box>
-                      </Box>
-                      
-                      <Typography variant="h6" noWrap title={metric.metric_name} gutterBottom>
-                        {metric.display_name}
-                      </Typography>
-                      
-                      <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                        หน่วย: {metric.unit || 'N/A'}
-                      </Typography>
-
-                      {/* Latest Value - แสดงค่าปัจจุบัน */}
-                      {metric.latest_value !== undefined && metric.latest_value !== null ? (
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="h4" color="primary" fontWeight="bold">
-                            {formatValue(metric.latest_value, metric.unit)}
-                          </Typography>
-                          <Box display="flex" alignItems="center" gap={1} mb={1}>
-                            {getTrendIcon(metric.trend)}
-                            <Typography variant="caption" color="textSecondary">
-                              {metric.trend === 'increasing' ? 'เพิ่มขึ้น' : 
-                               metric.trend === 'decreasing' ? 'ลดลง' :
-                               metric.trend === 'stable' ? 'คงที่' : 'ไม่ทราบแนวโน้ม'}
-                            </Typography>
-                          </Box>
-                          {metric.latest_time && (
-                            <Typography variant="caption" color="textSecondary" display="block">
-                              อัพเดต: {new Date(metric.latest_time).toLocaleString('th-TH')}
-                            </Typography>
-                          )}
-                        </Box>
-                      ) : (
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="h4" color="textSecondary" fontWeight="bold">
-                            ไม่มีข้อมูล
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary">
-                            ยังไม่มีค่าล่าสุด
-                          </Typography>
-                        </Box>
-                      )}
-
-                      {/* Statistics Summary - แสดงสถิติย่อ */}
-                      <Box sx={{ mb: 2 }}>
-                        {metric.avg_value !== undefined && metric.avg_value !== null ? (
-                          <Typography variant="body2" color="textSecondary" display="block" sx={{ mb: 0.5 }}>
-                            📊 เฉลี่ย: <strong>{formatValue(metric.avg_value, metric.unit)}</strong>
-                          </Typography>
-                        ) : null}
-                        
-                        {metric.min_value !== undefined && metric.max_value !== undefined && 
-                         metric.min_value !== null && metric.max_value !== null ? (
-                          <Typography variant="body2" color="textSecondary" display="block" sx={{ mb: 0.5 }}>
-                            📈 ช่วง: {formatValue(metric.min_value, metric.unit)} - {formatValue(metric.max_value, metric.unit)}
-                          </Typography>
-                        ) : null}
-                        
-                        <Typography variant="body2" color="success.main" display="block" sx={{ mb: 0.5 }}>
-                          ✅ ข้อมูลถูกต้อง: <strong>{metric.valid_readings.toLocaleString()}</strong> จุด
-                        </Typography>
-                        
-                        <Typography variant="body2" color="info.main" display="block">
-                          📦 ข้อมูลทั้งหมด: <strong>{metric.data_points.toLocaleString()}</strong> จุด
-                        </Typography>
-                      </Box>
-
-                      <Divider sx={{ my: 1 }} />
-                      
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Box>
-                          <Typography variant="caption" color="textSecondary">
-                            {metric.first_seen && metric.last_seen ? 
-                              `ช่วงข้อมูล: ${new Date(metric.first_seen).toLocaleDateString('th-TH')} - ${new Date(metric.last_seen).toLocaleDateString('th-TH')}`
-                              : 'ไม่มีข้อมูลช่วงเวลา'
-                            }
-                          </Typography>
-                        </Box>
-                        <IconButton 
-                          size="small" 
-                          color="primary"
-                          sx={{ 
-                            bgcolor: alpha(theme.palette.primary.main, 0.1),
-                            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) }
-                          }}
-                        >
-                          <ShowChart />
-                        </IconButton>
-                      </Box>
-                    </CardContent>
-                  </Card>
+                  <MetricCard metric={metric} onClick={handleMetricClick} />
                 </Grid>
               ))}
             </Grid>
@@ -756,7 +893,7 @@ const ImprovedMetricsPage: React.FC = () => {
           <Alert severity="info" sx={{ mb: 4 }}>
             <Typography variant="h6">ไม่พบเมตริกที่ตรงกับการค้นหา</Typography>
             <Typography variant="body2">
-              ไม่มีเมตริกที่ตรงกับการกรอง "{selectedMetricFilter}" - ลองใช้คำค้นหาอื่น หรือล้างตัวกรอง
+              ไม่มีเมตริกที่ตรงกับการกรอง "{String(selectedMetricFilter)}" - ลองใช้คำค้นหาอื่น หรือล้างตัวกรอง
             </Typography>
           </Alert>
         ) : metricsData && metricsData.metrics.length === 0 ? (
@@ -775,7 +912,7 @@ const ImprovedMetricsPage: React.FC = () => {
             เลือกอุปกรณ์เพื่อดูเมตริก
           </Typography>
           <Typography variant="body1" color="textSecondary" sx={{ mb: 2 }}>
-            คุณได้เลือกไซต์ "<strong>{sites?.find(s => s.site_code === selectedSite)?.site_name}</strong>" แล้ว
+            คุณได้เลือกไซต์ "<strong>{String(selectedSiteInfo?.site_name ?? selectedSite).toUpperCase()}</strong>" แล้ว
           </Typography>
           <Typography variant="body2" color="textSecondary">
             กรุณาเลือกอุปกรณ์จาก dropdown ด้านบนเพื่อดูข้อมูลเมตริกเฉพาะเจาะจง
@@ -830,7 +967,7 @@ const ImprovedMetricsPage: React.FC = () => {
               context={{
                 site_code: selectedSite,
                 equipment_id: selectedEquipment,
-                equipment_name: (equipment || []).find((eq) => eq.equipment_id === selectedEquipment)?.display_name,
+                equipment_name: selectedEquipmentInfo?.display_name,
                 metric_name: detailData.metric?.display_name || selectedDetailMetric,
               }}
             />
@@ -852,6 +989,7 @@ const ImprovedMetricsPage: React.FC = () => {
                 setExporting(true);
                 // Always fetch high-resolution (1h) for export
                 const params: any = {
+                  metric_name: selectedDetailMetric,
                   site_code: selectedSite,
                   equipment_id: selectedEquipment,
                   period: period,
@@ -861,11 +999,11 @@ const ImprovedMetricsPage: React.FC = () => {
                   params.start_time = appliedStartDate;
                   params.end_time = appliedEndDate;
                 }
-                const fullData = await apiGet<DetailedMetric>(`/metric/${encodeURIComponent(selectedDetailMetric)}/details`, params);
+                const fullData = await apiGet<DetailedMetric>('/metric/details', params);
 
                 const site = selectedSite || '';
                 const equipId = selectedEquipment || '';
-                const equipName = (equipment || []).find((eq) => eq.equipment_id === selectedEquipment)?.display_name || '';
+                const equipName = selectedEquipmentInfo?.display_name || '';
                 const metricDisp = fullData.metric?.display_name || selectedDetailMetric || '';
 
                 const escapeCsvField = (v: any) => {
@@ -948,6 +1086,22 @@ const ImprovedMetricsPage: React.FC = () => {
       >
         <Refresh />
       </Fab>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        autoHideDuration={6000}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

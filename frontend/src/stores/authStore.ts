@@ -18,11 +18,26 @@ interface AuthState {
   login: (username: string, password: string) => Promise<void>
   logout: () => void
   updateUser: (user: User) => void
+  checkTokenExpiration: () => void
 }
+
+// Function to decode JWT token
+const decodeJWT = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    return null;
+  }
+};
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
@@ -47,6 +62,9 @@ export const useAuthStore = create<AuthState>()(
           // Store token in localStorage
           localStorage.setItem('token', access_token);
           
+          // Set up axios default authorization header
+          axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+          
           // Update store
           set({
             token: access_token,
@@ -66,6 +84,9 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("token");
         localStorage.removeItem("ecc800-auth");
         
+        // Clear axios authorization header
+        delete axios.defaults.headers.common['Authorization'];
+        
         set({
           user: null,
           token: null,
@@ -79,6 +100,20 @@ export const useAuthStore = create<AuthState>()(
       updateUser: (user: User) => {
         set({ user })
       },
+      
+      checkTokenExpiration: () => {
+        const { token, logout } = get();
+        if (token) {
+          const decoded = decodeJWT(token);
+          if (decoded && decoded.exp) {
+            const currentTime = Date.now() / 1000;
+            if (decoded.exp < currentTime) {
+              console.log('Token expired, logging out...');
+              logout();
+            }
+          }
+        }
+      },
     }),
     {
       name: 'ecc800-auth',
@@ -87,6 +122,14 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Set up axios header when rehydrating from storage
+        if (state?.token) {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
+          // Check token expiration on app load
+          state.checkTokenExpiration();
+        }
+      },
     }
   )
 )

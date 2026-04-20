@@ -7,8 +7,8 @@ from typing import List, Optional
 import logging
 
 from app.core.database import execute_raw_query
-from app.services.auth import get_current_user
-from app.schemas.auth import User
+from app.auth.dependencies import get_current_user
+from app.models.models import User
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

@@ -341,22 +341,42 @@ const ModernRackItem: React.FC<{
   );
 };
 
-const RackLayoutDashboard_Professional: React.FC = () => {
+function RackLayoutDashboard_Professional() {
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'split' | 'dc' | 'dr'>('split');
   const [selectedRack, setSelectedRack] = useState<string | null>(null);
   const [showAirflow, setShowAirflow] = useState(true);
-  
   // Calculate proper dimensions to fit screen without scrolling
   const headerHeight = 64;
   const controlsHeight = 64;
-  const availableHeight = window.innerHeight - headerHeight - controlsHeight - 40; // 40px for margins
-  const availableWidth = window.innerWidth - 40; // 40px for margins
-  
-  // Canvas dimensions for perfect fit
-  const canvasWidth = viewMode === 'split' ? availableWidth / 2 - 20 : availableWidth;
-  const canvasHeight = availableHeight;
+
+  // Use a wrapper ref to measure the actual available area (this lets the page sit flush next to any side menu)
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [wrapperSize, setWrapperSize] = useState({ width: window.innerWidth, height: window.innerHeight - headerHeight - controlsHeight });
+
+  useEffect(() => {
+    const updateSize = () => {
+      if (wrapperRef.current) {
+        const rect = wrapperRef.current.getBoundingClientRect();
+        setWrapperSize({ width: Math.max(0, Math.floor(rect.width)), height: Math.max(0, Math.floor(rect.height)) });
+      } else {
+        setWrapperSize({ width: window.innerWidth, height: Math.max(0, window.innerHeight - headerHeight - controlsHeight) });
+      }
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, [headerHeight, controlsHeight]);
+
+  // Canvas dimensions for perfect fit (computed from wrapper measurement)
+  // Compute per-section canvas size (account for split view gap)
+  const splitGap = 8; // px gap between DC and DR when in split view
+  const sectionWidth = viewMode === 'split'
+    ? Math.max(0, Math.floor((wrapperSize.width - splitGap) / 2))
+    : wrapperSize.width;
+  const canvasHeight = wrapperSize.height;
 
   // Perfectly calculated rack positions for no overlap
   const rackWidth = 100;
@@ -612,6 +632,21 @@ const RackLayoutDashboard_Professional: React.FC = () => {
     }
   ], [rackSpacingX, rackSpacingY]);
 
+  // Compute content bounding box for DC and DR so we can scale to fit
+  const computeContentBounds = (racks: RackData[]) => {
+    let maxX = 0;
+    let maxY = 0;
+    racks.forEach(r => {
+      maxX = Math.max(maxX, r.position.x + rackWidth);
+      maxY = Math.max(maxY, r.position.y + rackHeight);
+    });
+    // add some padding
+    return { width: maxX + 60, height: maxY + 60 };
+  };
+
+  const dcContent = useMemo(() => computeContentBounds(dcRacks), [dcRacks]);
+  const drContent = useMemo(() => computeContentBounds(drRacks), [drRacks]);
+
   const handleRackSelect = (rackId: string) => {
     setSelectedRack(rackId === selectedRack ? null : rackId);
   };
@@ -621,7 +656,7 @@ const RackLayoutDashboard_Professional: React.FC = () => {
   };
 
   // Professional Cold Aisle Area (Center)
-  const renderProfessionalColdAisle = (offsetX: number, offsetY: number, width: number) => (
+  const renderProfessionalColdAisle = (offsetX: number, offsetY: number, width: number, height: number) => (
     <Group>
       <Rect
         x={offsetX + 30}
@@ -658,7 +693,7 @@ const RackLayoutDashboard_Professional: React.FC = () => {
   );
 
   // Professional Hot Aisles (Top & Bottom)
-  const renderProfessionalHotAisles = (offsetX: number, offsetY: number, width: number) => (
+  const renderProfessionalHotAisles = (offsetX: number, offsetY: number, width: number, height: number) => (
     <Group>
       {/* Top Hot Aisle */}
       <Rect
@@ -676,7 +711,7 @@ const RackLayoutDashboard_Professional: React.FC = () => {
       {/* Bottom Hot Aisle */}
       <Rect
         x={offsetX + 30}
-        y={offsetY + canvasHeight - 70}
+        y={offsetY + height - 70}
         width={width - 60}
         height={40}
         fill={isDarkMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(252, 165, 165, 0.25)'}
@@ -699,7 +734,7 @@ const RackLayoutDashboard_Professional: React.FC = () => {
       
       <Text
         x={offsetX + 50}
-        y={offsetY + canvasHeight - 55}
+        y={offsetY + height - 55}
         text="พื้นที่ลมร้อน (HOT AISLE)"
         fontSize={12}
         fontFamily="Arial"
@@ -709,61 +744,19 @@ const RackLayoutDashboard_Professional: React.FC = () => {
     </Group>
   );
 
+  // Render header/controls inline so the page uses the app template's header but keeps its own control bar
   return (
-    <Box sx={{ 
-      width: '100vw', 
-      height: '100vh', 
-      overflow: 'hidden',
-      bgcolor: isDarkMode ? '#0F172A' : '#F8FAFC'
-    }}>
-      {/* Professional Header */}
-      <AppBar 
-        position="static" 
-        elevation={0} 
-        sx={{ 
-          bgcolor: isDarkMode ? 'rgba(30, 41, 59, 0.95)' : 'rgba(248, 250, 252, 0.95)',
-          backdropFilter: 'blur(8px)',
-          borderBottom: 1,
-          borderColor: 'divider',
-          height: headerHeight
-        }}
-      >
-        <Toolbar sx={{ minHeight: `${headerHeight}px !important`, px: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton onClick={() => navigate('/dashboard')} color="primary" size="large">
-              <ArrowBack />
-            </IconButton>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Storage color="primary" sx={{ fontSize: 28 }} />
-              <Typography variant="h5" component="h1" color="text.primary" sx={{ fontWeight: 700, letterSpacing: -0.5 }}>
-                Data Center Rack Layout
-              </Typography>
-            </Box>
-          </Box>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml: 'auto' }}>
-            <Chip
-              label="Live Monitoring"
-              color="success"
-              icon={<ThermostatAuto />}
-              variant="outlined"
-              sx={{ fontWeight: 600 }}
-            />
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      {/* Professional Controls */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Controls bar (will sit under the app header provided by the template) */}
       <Box sx={{ 
         height: controlsHeight,
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center',
         gap: 3,
-        bgcolor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : 'rgba(248, 250, 252, 0.8)',
+        bgcolor: isDarkMode ? 'rgba(30, 41, 59, 0.08)' : 'rgba(248, 250, 252, 0.6)',
         borderBottom: 1,
-        borderColor: 'divider',
-        backdropFilter: 'blur(4px)'
+        borderColor: 'divider'
       }}>
         <ButtonGroup variant="contained" size="large" sx={{ borderRadius: 2 }}>
           <Button
@@ -809,50 +802,79 @@ const RackLayoutDashboard_Professional: React.FC = () => {
       </Box>
 
       {/* Main Canvas - Perfect Fit */}
-      <Box sx={{ 
-        display: 'flex',
-        height: `${availableHeight}px`,
-        p: 2
-      }}>
+      <Box
+        ref={wrapperRef}
+        sx={{
+          flex: 1,
+          display: 'flex',
+          gap: `${splitGap}px`,
+          height: `calc(100% - ${controlsHeight}px)`,
+          alignItems: 'stretch'
+        }}
+      >
         {/* DC Section */}
         {(viewMode === 'split' || viewMode === 'dc') && (
           <Box sx={{ 
-            width: viewMode === 'split' ? '50%' : '100%',
+            width: viewMode === 'split' ? `${sectionWidth}px` : '100%',
             height: '100%',
             border: 2,
             borderColor: isDarkMode ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.4)',
             borderRadius: 3,
             bgcolor: isDarkMode ? 'rgba(30, 41, 59, 0.3)' : 'rgba(255, 255, 255, 0.8)',
             position: 'relative',
-            mr: viewMode === 'split' ? 1 : 0,
+            mr: 0,
             overflow: 'hidden',
             backdropFilter: 'blur(4px)'
           }}>
-            <Stage width={canvasWidth} height={canvasHeight}>
+            <Stage width={Math.max(0, Math.floor(sectionWidth))} height={Math.max(0, Math.floor(canvasHeight))}>
               <Layer>
                 {/* Professional Background */}
                 <Rect
                   x={0}
                   y={0}
-                  width={canvasWidth}
+                  width={sectionWidth}
                   height={canvasHeight}
                   fill={isDarkMode ? 'rgba(15, 23, 42, 0.3)' : 'rgba(248, 250, 252, 0.5)'}
                 />
                 
                 {/* Hot/Cold Aisles */}
-                {renderProfessionalHotAisles(0, 0, canvasWidth)}
-                {renderProfessionalColdAisle(0, 0, canvasWidth)}
+                {renderProfessionalHotAisles(0, 0, sectionWidth, canvasHeight)}
+                {renderProfessionalColdAisle(0, 0, sectionWidth, canvasHeight)}
                 
-                {/* DC Racks */}
-                {dcRacks.map((rack) => (
-                  <ModernRackItem
-                    key={rack.id}
-                    rack={rack}
-                    onSelect={handleRackSelect}
-                    selectedId={selectedRack}
-                    theme={isDarkMode ? 'dark' : 'light'}
-                  />
-                ))}
+                {/* DC Racks - scaled/centered to fit section */}
+                {(() => {
+                  const content = dcContent;
+                  const scale = content.width > 0 && content.height > 0
+                    ? Math.min(sectionWidth / content.width, canvasHeight / content.height)
+                    : 1;
+                  const offsetX = Math.max(0, Math.floor((sectionWidth - content.width * scale) / 2));
+                  const offsetY = Math.max(0, Math.floor((canvasHeight - content.height * scale) / 2));
+                  return (
+                    <Group scaleX={scale} scaleY={scale} x={offsetX} y={offsetY}>
+                      {dcRacks.map((rack) => (
+                        <ModernRackItem
+                          key={rack.id}
+                          rack={rack}
+                          onSelect={handleRackSelect}
+                          selectedId={selectedRack}
+                          theme={isDarkMode ? 'dark' : 'light'}
+                        />
+                      ))}
+                      {showAirflow && dcRacks
+                        .filter(rack => rack.type === 'aircon')
+                        .map((rack) => (
+                          <ModernCoolingEffect
+                            key={`cooling-${rack.id}`}
+                            x={rack.position.x + 50}
+                            y={rack.position.y + 70}
+                            theme={isDarkMode ? 'dark' : 'light'}
+                            isActive={rack.isActive}
+                          />
+                        ))
+                      }
+                    </Group>
+                  );
+                })()}
                 
                 {/* Modern Cooling Effects */}
                 {showAirflow && dcRacks
@@ -873,12 +895,12 @@ const RackLayoutDashboard_Professional: React.FC = () => {
             {/* DC Header Overlay */}
             <Box sx={{
               position: 'absolute',
-              top: 16,
-              left: 16,
+              top: 12,
+              left: 12,
               bgcolor: 'rgba(59, 130, 246, 0.9)',
               color: 'white',
-              px: 2.5,
-              py: 1.5,
+              px: 2,
+              py: 1,
               borderRadius: 2,
               backdropFilter: 'blur(8px)'
             }}>
@@ -892,42 +914,54 @@ const RackLayoutDashboard_Professional: React.FC = () => {
         {/* DR Section */}
         {(viewMode === 'split' || viewMode === 'dr') && (
           <Box sx={{ 
-            width: viewMode === 'split' ? '50%' : '100%',
+            width: viewMode === 'split' ? `${sectionWidth}px` : '100%',
             height: '100%',
             border: 2,
             borderColor: isDarkMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.4)',
             borderRadius: 3,
             bgcolor: isDarkMode ? 'rgba(30, 41, 59, 0.3)' : 'rgba(255, 255, 255, 0.8)',
             position: 'relative',
-            ml: viewMode === 'split' ? 1 : 0,
+            ml: 0,
             overflow: 'hidden',
             backdropFilter: 'blur(4px)'
           }}>
-            <Stage width={canvasWidth} height={canvasHeight}>
+            <Stage width={Math.max(0, Math.floor(sectionWidth))} height={Math.max(0, Math.floor(canvasHeight))}>
               <Layer>
                 {/* Professional Background */}
                 <Rect
                   x={0}
                   y={0}
-                  width={canvasWidth}
+                  width={sectionWidth}
                   height={canvasHeight}
                   fill={isDarkMode ? 'rgba(15, 23, 42, 0.3)' : 'rgba(248, 250, 252, 0.5)'}
                 />
                 
                 {/* Hot/Cold Aisles */}
-                {renderProfessionalHotAisles(0, 0, canvasWidth)}
-                {renderProfessionalColdAisle(0, 0, canvasWidth)}
+                {renderProfessionalHotAisles(0, 0, sectionWidth, canvasHeight)}
+                {renderProfessionalColdAisle(0, 0, sectionWidth, canvasHeight)}
                 
-                {/* DR Racks */}
-                {drRacks.map((rack) => (
-                  <ModernRackItem
-                    key={rack.id}
-                    rack={rack}
-                    onSelect={handleRackSelect}
-                    selectedId={selectedRack}
-                    theme={isDarkMode ? 'dark' : 'light'}
-                  />
-                ))}
+                {/* DR Racks - scaled/centered to fit section */}
+                {(() => {
+                  const content = drContent;
+                  const scale = content.width > 0 && content.height > 0
+                    ? Math.min(sectionWidth / content.width, canvasHeight / content.height)
+                    : 1;
+                  const offsetX = Math.max(0, Math.floor((sectionWidth - content.width * scale) / 2));
+                  const offsetY = Math.max(0, Math.floor((canvasHeight - content.height * scale) / 2));
+                  return (
+                    <Group scaleX={scale} scaleY={scale} x={offsetX} y={offsetY}>
+                      {drRacks.map((rack) => (
+                        <ModernRackItem
+                          key={rack.id}
+                          rack={rack}
+                          onSelect={handleRackSelect}
+                          selectedId={selectedRack}
+                          theme={isDarkMode ? 'dark' : 'light'}
+                        />
+                      ))}
+                    </Group>
+                  );
+                })()}
               </Layer>
             </Stage>
             
@@ -1039,6 +1073,8 @@ const RackLayoutDashboard_Professional: React.FC = () => {
       )}
     </Box>
   );
-};
+
+  // End of component - render inline (no portal)
+}
 
 export default RackLayoutDashboard_Professional;

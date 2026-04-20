@@ -45,6 +45,7 @@ import {
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useTheme as useCustomTheme } from '../contexts/ThemeProvider';
+import PipelineStatusIndicator from './PipelineStatusIndicator';
 
 const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Dashboard, path: '/dashboard', description: 'Overview & Monitoring' },
@@ -186,6 +187,9 @@ const MainLayout: React.FC = () => {
             {isDarkMode ? <LightMode /> : <DarkMode />}
           </IconButton>
         </Tooltip>
+
+        {/* Pipeline Status Component */}
+        <PipelineStatusIndicator />
 
         {/* Notifications */}
         <Tooltip title="Notifications" arrow>

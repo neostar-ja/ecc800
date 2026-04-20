@@ -10,8 +10,8 @@ from pydantic import BaseModel
 import logging
 
 from app.core.database import get_db, execute_raw_query
-from app.services.auth import get_current_user
-from app.schemas.auth import User
+from app.auth.dependencies import get_current_user
+from app.models.models import User
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -290,7 +290,9 @@ async def get_enhanced_metrics(
     """
     try:
         # Calculate time range based on period
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        # ใช้ Bangkok timezone (UTC+7) เพื่อให้ตรงกับเวลาในฐานข้อมูล
+        bangkok_tz = timezone(timedelta(hours=7))
+        now = datetime.now(bangkok_tz).replace(tzinfo=None)
         
         if period == "custom" and start_time and end_time:
             from_time = start_time.replace(tzinfo=None) if start_time.tzinfo else start_time
@@ -587,9 +589,9 @@ async def get_site_equipment(
             detail=f"ไม่สามารถดึงข้อมูลอุปกรณ์: {str(e)}"
         )
 
-@router.get("/metric/{metric_name}/details", response_model=DetailedMetricResponse)
+@router.get("/metric/details", response_model=DetailedMetricResponse)
 async def get_metric_details(
-    metric_name: str,
+    metric_name: str = Query(..., description="ชื่อ metric"),
     site_code: str = Query(..., description="รหัสไซต์"),
     equipment_id: str = Query(..., description="รหัสอุปกรณ์"),
     period: str = Query("24h", description="ช่วงเวลา (1h, 4h, 24h, 3d, 7d, 30d, custom)"),
@@ -605,7 +607,9 @@ async def get_metric_details(
     """
     try:
         # Calculate time range
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        # ใช้ Bangkok timezone (UTC+7) เพื่อให้ตรงกับเวลาในฐานข้อมูล
+        bangkok_tz = timezone(timedelta(hours=7))
+        now = datetime.now(bangkok_tz).replace(tzinfo=None)
         
         if period == "custom" and start_time and end_time:
             from_time = start_time.replace(tzinfo=None) if start_time.tzinfo else start_time
@@ -669,7 +673,41 @@ async def get_metric_details(
         stats_result = await execute_raw_query(stats_query, stats_params)
 
         if not stats_result:
-            raise HTTPException(status_code=404, detail="ไม่พบข้อมูลสำหรับ metric นี้")
+            # Return empty response instead of 404 for metrics with no valid data
+            metric_info = categorize_metric(metric_name, "N/A")
+            return DetailedMetricResponse(
+                metric=MetricInfo(
+                    metric_name=metric_name,
+                    display_name=metric_name,
+                    unit="N/A",
+                    data_points=0,
+                    first_seen=datetime(1970, 1, 1),
+                    last_seen=datetime(1970, 1, 1),
+                    category=metric_info['category'],
+                    description=f"{metric_info['description']} (ไม่มีข้อมูล)",
+                    icon=metric_info['icon'],
+                    color=metric_info['color']
+                ),
+                statistics=MetricStats(
+                    min=0.0,
+                    max=0.0,
+                    avg=0.0,
+                    median=0.0,
+                    std_dev=0.0,
+                    count=0,
+                    latest=0.0,
+                    trend="stable"
+                ),
+                data_points=[],
+                time_range={
+                    "from": from_time.isoformat(),
+                    "to": to_time.isoformat(),
+                    "interval": pg_interval
+                },
+                site_code=site_code,
+                equipment_id=equipment_id,
+                chart_config=_generate_chart_config(metric_name, "N/A", [])
+            )
 
         # normalize stat_row
         stat_row = stats_result[0] if isinstance(stats_result[0], dict) else None

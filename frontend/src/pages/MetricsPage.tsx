@@ -37,33 +37,10 @@ import TimeSeriesChart from '../components/TimeSeriesChart';
 
 const MetricsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
   const [selectedSite, setSelectedSite] = useState<string>('');
   const [selectedEquipment, setSelectedEquipment] = useState<string>('');
   const [selectedMetric, setSelectedMetric] = useState<string>('');
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>('last24Hours');
-
-  // Check authentication status
-  useEffect(() => {
-    if (!isAuthenticated) {
-      // Show login modal or redirect
-      navigate('/', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
-
-  // Show loading screen if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-          <CircularProgress />
-          <Typography variant="h6" sx={{ ml: 2 }}>
-            กำลังตรวจสอบสิทธิ์การเข้าใช้งาน...
-          </Typography>
-        </Box>
-      </Container>
-    );
-  }
 
   // Get time range
   const getTimeRange = () => {

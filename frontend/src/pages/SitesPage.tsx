@@ -11,12 +11,37 @@ import {
   MenuItem,
   Button,
   Chip,
+  Stack,
 } from '@mui/material';
 import { Refresh, Download } from '@mui/icons-material';
 import { apiGet } from '../lib/api';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {
+  glassCardClass,
+  toolbarClass,
+  sectionTitleClass,
+  sectionSubtitleClass,
+  cardGridSpacing,
+} from '../styles/designSystem';
+
+const PIE_COLORS = ['#1976d2', '#d32f2f', '#388e3c', '#f57c00', '#7b1fa2', '#0097a7'] as const;
+
+interface KPIProps {
+  title: string;
+  value: React.ReactNode;
+}
+
+const KPICard: React.FC<KPIProps> = React.memo(({ title, value }) => (
+  <Box textAlign="center" p={1}>
+    <Typography variant="h5">{value ?? '-'}</Typography>
+    <Typography variant="body2" color="text.secondary">{title}</Typography>
+  </Box>
+));
+KPICard.displayName = 'KPICard';
 
 interface SiteItem { site_code: string; site_name?: string }
 interface Summary { devices:number; metrics:number; datapoints:number; faults:number; last_import:string; success_rate:number; health_score:number }
@@ -30,6 +55,8 @@ const SitesPage: React.FC = () => {
   const [rightSite, setRightSite] = useState<string>('');
   const [period, setPeriod] = useState<string>('24h');
   const [loading, setLoading] = useState<boolean>(false);
+  const theme = useTheme();
+  const isMdDown = useMediaQuery(theme.breakpoints.down('md'));
 
   // Data states
   const [leftSummary, setLeftSummary] = useState<Summary | null>(null);
@@ -81,14 +108,10 @@ const SitesPage: React.FC = () => {
 
   useEffect(() => { fetchAll(); }, [leftSite, rightSite, period]);
 
-  const KPI = ({ title, value }: { title: string; value: any }) => (
-    <Box textAlign="center" p={1}>
-      <Typography variant="h5">{value ?? '-'}</Typography>
-      <Typography variant="body2" color="text.secondary">{title}</Typography>
-    </Box>
-  );
-
-  const COLORS = ['#1976d2','#d32f2f','#388e3c','#f57c00','#7b1fa2','#0097a7'];
+  const leftBreakdownData = useMemo(() => Array.isArray(leftBreakdown) ? leftBreakdown : [], [leftBreakdown]);
+  const rightBreakdownData = useMemo(() => Array.isArray(rightBreakdown) ? rightBreakdown : [], [rightBreakdown]);
+  const leftFaultItems = useMemo(() => (Array.isArray(leftFaults) ? leftFaults.slice(0, 50) : []), [leftFaults]);
+  const rightFaultItems = useMemo(() => (Array.isArray(rightFaults) ? rightFaults.slice(0, 50) : []), [rightFaults]);
 
   const exportCSV = (filename: string, header: string[], rows: (string|number|null)[][]) => {
     try {
@@ -100,11 +123,18 @@ const SitesPage: React.FC = () => {
   };
 
   return (
-    <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h4">ECC800 Dashboard - Sites (DC vs DR)</Typography>
-        <Box display="flex" gap={2}>
-          <FormControl size="small" sx={{ minWidth: 160 }}>
+    <Box className="space-y-6">
+      <Box className={toolbarClass}>
+        <Box>
+          <Typography variant="h4" className="font-semibold tracking-tight">
+            ECC800 Sites Comparator
+          </Typography>
+          <Typography variant="body2" className={sectionSubtitleClass}>
+            เปรียบเทียบข้อมูลศูนย์ข้อมูลหลักและศูนย์สำรองแบบเรียลไทม์
+          </Typography>
+        </Box>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} className="w-full md:w-auto">
+          <FormControl size="small" className="sm:min-w-[160px]">
             <InputLabel>ช่วงเวลา</InputLabel>
             <Select value={period} label="ช่วงเวลา" onChange={(e)=>setPeriod(e.target.value)}>
               <MenuItem value="24h">24 ชม.</MenuItem>
@@ -113,17 +143,22 @@ const SitesPage: React.FC = () => {
               <MenuItem value="30d">30 วัน</MenuItem>
             </Select>
           </FormControl>
-          <Button variant="outlined" startIcon={<Refresh />} onClick={fetchAll} disabled={loading}>Refresh</Button>
-          <Button variant="outlined" startIcon={<Download />} onClick={()=>{ /* TODO: export all */ }}>Export</Button>
-        </Box>
+          <Button variant="outlined" startIcon={<Refresh />} onClick={fetchAll} disabled={loading} className="min-w-[140px]">
+            Refresh
+          </Button>
+          <Button variant="outlined" startIcon={<Download />} className="min-w-[140px]" onClick={()=>{ /* TODO: export all */ }}>
+            Export
+          </Button>
+        </Stack>
       </Box>
 
-      <Grid container spacing={2}>
+  <Grid container spacing={isMdDown ? cardGridSpacing.xs : cardGridSpacing.md}>
         {/* Site Selectors */}
         <Grid item xs={12} md={6}>
-          <Card><CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-              <Typography variant="h6">DC (ซ้าย)</Typography>
+          <Card className={glassCardClass}>
+            <CardContent>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                <Typography variant="h6" className={sectionTitleClass}>DC (ซ้าย)</Typography>
               <FormControl size="small" sx={{ minWidth: 160 }}>
                 <InputLabel>เลือกไซต์ (DC)</InputLabel>
                 <Select value={leftSite} label="เลือกไซต์ (DC)" onChange={(e)=>setLeftSite(e.target.value)}>
@@ -133,19 +168,21 @@ const SitesPage: React.FC = () => {
             </Box>
             {/* KPIs */}
             <Grid container spacing={1}>
-              <Grid item xs={4}><KPI title="Devices" value={leftSummary?.devices}/></Grid>
-              <Grid item xs={4}><KPI title="Metrics" value={leftSummary?.metrics}/></Grid>
-              <Grid item xs={4}><KPI title="Datapoints" value={leftSummary?.datapoints?.toLocaleString()}/></Grid>
-              <Grid item xs={4}><KPI title="Faults" value={leftSummary?.faults}/></Grid>
-              <Grid item xs={4}><KPI title="Success Rate" value={`${leftSummary?.success_rate ?? 0}%`}/></Grid>
-              <Grid item xs={4}><KPI title="Health Score" value={<Chip label={leftSummary?.health_score ?? 0} color={(leftSummary?.health_score ?? 0)>80?'success':(leftSummary?.health_score ?? 0)>60?'warning':'default'}/>} /></Grid>
+              <Grid item xs={4}><KPICard title="Devices" value={leftSummary?.devices} /></Grid>
+              <Grid item xs={4}><KPICard title="Metrics" value={leftSummary?.metrics} /></Grid>
+              <Grid item xs={4}><KPICard title="Datapoints" value={leftSummary?.datapoints?.toLocaleString()} /></Grid>
+              <Grid item xs={4}><KPICard title="Faults" value={leftSummary?.faults} /></Grid>
+              <Grid item xs={4}><KPICard title="Success Rate" value={`${leftSummary?.success_rate ?? 0}%`} /></Grid>
+              <Grid item xs={4}><KPICard title="Health Score" value={<Chip label={leftSummary?.health_score ?? 0} color={(leftSummary?.health_score ?? 0)>80?'success':(leftSummary?.health_score ?? 0)>60?'warning':'default'} />} /></Grid>
             </Grid>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card><CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-              <Typography variant="h6">DR (ขวา)</Typography>
+          <Card className={glassCardClass}>
+            <CardContent>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                <Typography variant="h6" className={sectionTitleClass}>DR (ขวา)</Typography>
               <FormControl size="small" sx={{ minWidth: 160 }}>
                 <InputLabel>เลือกไซต์ (DR)</InputLabel>
                 <Select value={rightSite} label="เลือกไซต์ (DR)" onChange={(e)=>setRightSite(e.target.value)}>
@@ -154,14 +191,15 @@ const SitesPage: React.FC = () => {
               </FormControl>
             </Box>
             <Grid container spacing={1}>
-              <Grid item xs={4}><KPI title="Devices" value={rightSummary?.devices}/></Grid>
-              <Grid item xs={4}><KPI title="Metrics" value={rightSummary?.metrics}/></Grid>
-              <Grid item xs={4}><KPI title="Datapoints" value={rightSummary?.datapoints?.toLocaleString()}/></Grid>
-              <Grid item xs={4}><KPI title="Faults" value={rightSummary?.faults}/></Grid>
-              <Grid item xs={4}><KPI title="Success Rate" value={`${rightSummary?.success_rate ?? 0}%`}/></Grid>
-              <Grid item xs={4}><KPI title="Health Score" value={<Chip label={rightSummary?.health_score ?? 0} color={(rightSummary?.health_score ?? 0)>80?'success':(rightSummary?.health_score ?? 0)>60?'warning':'default'}/>} /></Grid>
+              <Grid item xs={4}><KPICard title="Devices" value={rightSummary?.devices} /></Grid>
+              <Grid item xs={4}><KPICard title="Metrics" value={rightSummary?.metrics} /></Grid>
+              <Grid item xs={4}><KPICard title="Datapoints" value={rightSummary?.datapoints?.toLocaleString()} /></Grid>
+              <Grid item xs={4}><KPICard title="Faults" value={rightSummary?.faults} /></Grid>
+              <Grid item xs={4}><KPICard title="Success Rate" value={`${rightSummary?.success_rate ?? 0}%`} /></Grid>
+              <Grid item xs={4}><KPICard title="Health Score" value={<Chip label={rightSummary?.health_score ?? 0} color={(rightSummary?.health_score ?? 0)>80?'success':(rightSummary?.health_score ?? 0)>60?'warning':'default'} />} /></Grid>
             </Grid>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
         </Grid>
 
         {/* Trending: Temperature */}
@@ -238,8 +276,9 @@ const SitesPage: React.FC = () => {
 
         {/* Equipment Breakdown */}
         <Grid item xs={12} md={6}>
-          <Card><CardContent>
-            <Typography variant="h6" gutterBottom>Equipment Breakdown (DC)</Typography>
+          <Card className={glassCardClass}>
+            <CardContent>
+              <Typography variant="h6" className={sectionTitleClass} gutterBottom>Equipment Breakdown (DC)</Typography>
             <Box display="flex" justifyContent="flex-end" mb={1}>
               <Button size="small" startIcon={<Download />} onClick={()=>{
                 exportCSV('dc_equipment_breakdown.csv', ['type','count'], leftBreakdown.map((r:any)=>[r.type,r.count]));
@@ -248,18 +287,20 @@ const SitesPage: React.FC = () => {
             <Box height={260}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie dataKey="count" data={Array.isArray(leftBreakdown)?leftBreakdown:[]} nameKey="type" outerRadius={90} label>
-                    {(Array.isArray(leftBreakdown)?leftBreakdown:[]).map((_, i)=>(<Cell key={i} fill={COLORS[i%COLORS.length]} />))}
+                  <Pie dataKey="count" data={leftBreakdownData} nameKey="type" outerRadius={90} label>
+                    {leftBreakdownData.map((_, i)=>(<Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]} />))}
                   </Pie>
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </Box>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card><CardContent>
-            <Typography variant="h6" gutterBottom>Equipment Breakdown (DR)</Typography>
+          <Card className={glassCardClass}>
+            <CardContent>
+              <Typography variant="h6" className={sectionTitleClass} gutterBottom>Equipment Breakdown (DR)</Typography>
             <Box display="flex" justifyContent="flex-end" mb={1}>
               <Button size="small" startIcon={<Download />} onClick={()=>{
                 exportCSV('dr_equipment_breakdown.csv', ['type','count'], rightBreakdown.map((r:any)=>[r.type,r.count]));
@@ -268,62 +309,107 @@ const SitesPage: React.FC = () => {
             <Box height={260}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie dataKey="count" data={Array.isArray(rightBreakdown)?rightBreakdown:[]} nameKey="type" outerRadius={90} label>
-                    {(Array.isArray(rightBreakdown)?rightBreakdown:[]).map((_, i)=>(<Cell key={i} fill={COLORS[i%COLORS.length]} />))}
+                  <Pie dataKey="count" data={rightBreakdownData} nameKey="type" outerRadius={90} label>
+                    {rightBreakdownData.map((_, i)=>(<Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]} />))}
                   </Pie>
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </Box>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
         </Grid>
 
         {/* Fault Timeline Table */}
         <Grid item xs={12} md={6}>
-          <Card><CardContent>
+          <Card className={glassCardClass}>
+            <CardContent>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Typography variant="h6">Fault Timeline (DC)</Typography>
+                <Typography variant="h6" className={sectionTitleClass}>Fault Timeline (DC)</Typography>
               <Button size="small" startIcon={<Download />} onClick={()=>{
                 exportCSV('dc_faults.csv', ['time','equipment','type','severity','value','unit'], (leftFaults||[]).map((f:any)=>[
                   f.timestamp ? new Date(f.timestamp).toLocaleString('th-TH') : '', f.equipment_name||f.equipment_id, f.fault_type, f.severity, f.value, f.unit
                 ]));
               }}>Export</Button>
             </Box>
-            <Box sx={{ maxHeight: 280, overflow: 'auto' }}>
-              {(leftFaults||[]).slice(0,50).map((f:any, i:number)=> (
-                <Box key={i} display="grid" gridTemplateColumns="140px 1fr 1fr 90px 1fr" gap={1} py={0.5} borderBottom="1px solid rgba(0,0,0,0.06)">
-                  <Box>{f.timestamp ? new Date(f.timestamp).toLocaleString('th-TH') : '-'}</Box>
-                  <Box>{f.equipment_name || f.equipment_id}</Box>
-                  <Box>{f.fault_type}</Box>
-                  <Box><Chip label={f.severity} color={f.severity==='critical'?'error':f.severity==='warning'?'warning':'default'} size="small" /></Box>
-                  <Box>{f.value} {f.unit}</Box>
-                </Box>
-              ))}
+              <Box
+                sx={{ maxHeight: isMdDown ? '100%' : 280, overflowY: 'auto' }}
+                className="space-y-3"
+              >
+                {leftFaultItems.map((f:any, i:number)=> (
+                  <Box
+                    key={i}
+                    className="flex flex-col gap-2 rounded-xl border border-slate-200/80 bg-white/90 p-3 text-sm shadow-sm transition hover:border-sky-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/70 md:grid md:grid-cols-[140px_minmax(0,1fr)_minmax(0,1fr)_110px_minmax(0,1fr)] md:items-center"
+                  >
+                    <Typography variant="body2" color="text.secondary" className="font-medium">
+                      {f.timestamp ? new Date(f.timestamp).toLocaleString('th-TH') : '-'}
+                    </Typography>
+                    <Typography variant="body2" className="font-semibold text-slate-700 dark:text-slate-200">
+                      {f.equipment_name || f.equipment_id}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {f.fault_type}
+                    </Typography>
+                    <Box>
+                      <Chip
+                        label={f.severity}
+                        color={f.severity==='critical'?'error':f.severity==='warning'?'warning':'default'}
+                        size="small"
+                      />
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {f.value} {f.unit}
+                    </Typography>
+                  </Box>
+                ))}
             </Box>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card><CardContent>
+          <Card className={glassCardClass}>
+            <CardContent>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Typography variant="h6">Fault Timeline (DR)</Typography>
+                <Typography variant="h6" className={sectionTitleClass}>Fault Timeline (DR)</Typography>
               <Button size="small" startIcon={<Download />} onClick={()=>{
                 exportCSV('dr_faults.csv', ['time','equipment','type','severity','value','unit'], (rightFaults||[]).map((f:any)=>[
                   f.timestamp ? new Date(f.timestamp).toLocaleString('th-TH') : '', f.equipment_name||f.equipment_id, f.fault_type, f.severity, f.value, f.unit
                 ]));
               }}>Export</Button>
             </Box>
-            <Box sx={{ maxHeight: 280, overflow: 'auto' }}>
-              {(rightFaults||[]).slice(0,50).map((f:any, i:number)=> (
-                <Box key={i} display="grid" gridTemplateColumns="140px 1fr 1fr 90px 1fr" gap={1} py={0.5} borderBottom="1px solid rgba(0,0,0,0.06)">
-                  <Box>{f.timestamp ? new Date(f.timestamp).toLocaleString('th-TH') : '-'}</Box>
-                  <Box>{f.equipment_name || f.equipment_id}</Box>
-                  <Box>{f.fault_type}</Box>
-                  <Box><Chip label={f.severity} color={f.severity==='critical'?'error':f.severity==='warning'?'warning':'default'} size="small" /></Box>
-                  <Box>{f.value} {f.unit}</Box>
-                </Box>
-              ))}
+              <Box
+                sx={{ maxHeight: isMdDown ? '100%' : 280, overflowY: 'auto' }}
+                className="space-y-3"
+              >
+                {rightFaultItems.map((f:any, i:number)=> (
+                  <Box
+                    key={i}
+                    className="flex flex-col gap-2 rounded-xl border border-slate-200/80 bg-white/90 p-3 text-sm shadow-sm transition hover:border-sky-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/70 md:grid md:grid-cols-[140px_minmax(0,1fr)_minmax(0,1fr)_110px_minmax(0,1fr)] md:items-center"
+                  >
+                    <Typography variant="body2" color="text.secondary" className="font-medium">
+                      {f.timestamp ? new Date(f.timestamp).toLocaleString('th-TH') : '-'}
+                    </Typography>
+                    <Typography variant="body2" className="font-semibold text-slate-700 dark:text-slate-200">
+                      {f.equipment_name || f.equipment_id}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {f.fault_type}
+                    </Typography>
+                    <Box>
+                      <Chip
+                        label={f.severity}
+                        color={f.severity==='critical'?'error':f.severity==='warning'?'warning':'default'}
+                        size="small"
+                      />
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {f.value} {f.unit}
+                    </Typography>
+                  </Box>
+                ))}
             </Box>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
     </Box>

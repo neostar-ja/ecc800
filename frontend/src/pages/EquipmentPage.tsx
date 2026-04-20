@@ -59,6 +59,16 @@ import {
 import { useSites, useEquipment } from '../lib/hooks';
 import { api, EquipmentData, Equipment } from '../lib/api';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {
+  glassCardClass,
+  toolbarClass,
+  sectionTitleClass,
+  sectionSubtitleClass,
+  actionStackClass,
+  cardGridSpacing,
+} from '../styles/designSystem';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -82,6 +92,8 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const EquipmentPage: React.FC = () => {
+  const theme = useTheme();
+  const isMdDown = useMediaQuery(theme.breakpoints.down('md'));
   const [selectedSite, setSelectedSite] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentData | null>(null);
@@ -247,24 +259,30 @@ const EquipmentPage: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <Box mb={4} display="flex" justifyContent="space-between" alignItems="center">
+      <Box className={`${toolbarClass} mb-6`}>
         <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
+          <Typography variant="h4" component="h1" gutterBottom className="font-semibold">
             🖥️ จัดการอุปกรณ์
           </Typography>
-          <Typography variant="subtitle1" color="textSecondary">
-            ติดตามสถานะและจัดการอุปกรณ์ในศูนย์ข้อมูล
+          <Typography variant="subtitle1" className={sectionSubtitleClass}>
+            ติดตามสถานะและจัดการอุปกรณ์ในศูนย์ข้อมูลแบบเรียลไทม์
           </Typography>
         </Box>
-        <IconButton onClick={() => refetch()} disabled={!selectedSite}>
-          <Refresh />
-        </IconButton>
+        <Button
+          variant="outlined"
+          startIcon={<Refresh />}
+          onClick={() => refetch()}
+          disabled={!selectedSite}
+          className="self-start md:self-auto"
+        >
+          รีเฟรชข้อมูล
+        </Button>
       </Box>
 
       {/* Controls */}
-      <Card sx={{ mb: 4 }}>
+      <Card className={`${glassCardClass} mb-6`}>
         <CardContent>
-          <Grid container spacing={3} alignItems="center">
+          <Grid container spacing={isMdDown ? cardGridSpacing.xs : cardGridSpacing.md} alignItems="center">
             <Grid item xs={12} md={6}>
               <TextField
                 select
@@ -302,9 +320,9 @@ const EquipmentPage: React.FC = () => {
 
       {/* Equipment Stats */}
       {selectedSite && equipment && (
-        <Grid container spacing={3} mb={4}>
+        <Grid container spacing={isMdDown ? cardGridSpacing.xs : cardGridSpacing.md} mb={4}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card className={glassCardClass}>
               <CardContent>
                 <Box display="flex" alignItems="center">
                   <Computer color="primary" sx={{ fontSize: 40, mr: 2 }} />
@@ -322,7 +340,7 @@ const EquipmentPage: React.FC = () => {
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card className={glassCardClass}>
               <CardContent>
                 <Box display="flex" alignItems="center">
                   <CheckCircle color="success" sx={{ fontSize: 40, mr: 2 }} />
@@ -340,7 +358,7 @@ const EquipmentPage: React.FC = () => {
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card className={glassCardClass}>
               <CardContent>
                 <Box display="flex" alignItems="center">
                   <Warning color="warning" sx={{ fontSize: 40, mr: 2 }} />
@@ -358,7 +376,7 @@ const EquipmentPage: React.FC = () => {
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card className={glassCardClass}>
               <CardContent>
                 <Box display="flex" alignItems="center">
                   <Error color="error" sx={{ fontSize: 40, mr: 2 }} />
@@ -379,10 +397,10 @@ const EquipmentPage: React.FC = () => {
 
       {/* Equipment Table */}
       {selectedSite && (
-        <Card>
+        <Card className={glassCardClass}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              📋 รายการอุปกรณ์ - {sites?.find(s => s.site_code === selectedSite)?.site_name}
+              <span className={sectionTitleClass}>📋 รายการอุปกรณ์ - {sites?.find(s => s.site_code === selectedSite)?.site_name}</span>
             </Typography>
 
             {equipmentLoading ? (
@@ -409,114 +427,194 @@ const EquipmentPage: React.FC = () => {
                 )}
               </Box>
             ) : (
-              <TableContainer component={Paper} sx={{ mt: 2 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>สถานะ</TableCell>
-                      <TableCell>รหัสอุปกรณ์</TableCell>
-                      <TableCell>ชื่ออุปกรณ์</TableCell>
-                      <TableCell>ประเภท</TableCell>
-                      <TableCell>คำอธิบาย</TableCell>
-                      <TableCell>ข้อมูลล่าสุด</TableCell>
-                      <TableCell align="center">การจัดการ</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredEquipment.map((item) => (
-                      <TableRow key={item.equipment_id || `eq-${Math.random()}`} hover>
-                        <TableCell>
-                          <Box display="flex" alignItems="center">
+              isMdDown ? (
+                <Stack spacing={2} mt={2}>
+                  {filteredEquipment.map((item, idx) => (
+                    <Card
+                      key={item.equipment_id || `eq-card-${idx}`}
+                      variant="outlined"
+                      className={glassCardClass}
+                    >
+                      <CardContent className="space-y-3">
+                        <Box className={actionStackClass}>
+                          <Box className="flex items-center gap-2">
                             {getStatusIcon(item.status)}
-                            <Chip 
-                              label={item.status || 'ไม่ทราบ'}
-                              color={getStatusColor(item.status)}
-                              size="small"
-                              sx={{ ml: 1 }}
-                            />
+                            <Chip label={item.status || 'ไม่ทราบ'} color={getStatusColor(item.status)} size="small" />
                           </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight="bold">
+                          <Typography variant="body2" className="font-semibold text-slate-700 dark:text-slate-200">
                             {item.equipment_id || 'N/A'}
                           </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box>
-                            <Typography variant="body2" fontWeight="bold">
-                              {item.display_name || item.custom_name || item.equipment_name || item.original_name || 'ไม่ระบุ'}
-                            </Typography>
-                            {(
-                              (item.display_name && item.original_name && item.display_name !== item.original_name) ||
-                              (item.custom_name && item.original_name && item.custom_name !== item.original_name)
-                            ) && (
-                              <Typography variant="caption" color="textSecondary">
-                                เดิม: {item.original_name}
-                              </Typography>
-                            )}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          {item.equipment_type || item.type || 'ไม่ทราบ'}
-                        </TableCell>
-                        <TableCell>
-                          <Box>
-                            <Typography variant="body2" sx={{ maxWidth: 200 }}>
-                              {item.description || '-'}
-                            </Typography>
-                            {/* show additional small stats if present */}
-                            <Box sx={{ mt: 0.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                              {item.metrics_count !== undefined && (
-                                <Chip label={`Metrics: ${item.metrics_count}`} size="small" />
-                              )}
-                              {item.total_records !== undefined && (
-                                <Chip label={`Records: ${item.total_records.toLocaleString()}`} size="small" />
-                              )}
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          {item.last_updated ? (
-                            <Typography variant="body2">
-                              {new Date(item.last_updated).toLocaleString('th-TH')}
-                            </Typography>
-                          ) : (
-                            <Typography variant="body2" color="textSecondary">
-                              ไม่มีข้อมูล
+                        </Box>
+
+                        <Box className="space-y-1">
+                          <Typography variant="subtitle1" className="font-semibold">
+                            {item.display_name || item.custom_name || item.equipment_name || item.original_name || 'ไม่ระบุ'}
+                          </Typography>
+                          {(
+                            (item.display_name && item.original_name && item.display_name !== item.original_name) ||
+                            (item.custom_name && item.original_name && item.custom_name !== item.original_name)
+                          ) && (
+                            <Typography variant="caption" color="text.secondary">
+                              เดิม: {item.original_name}
                             </Typography>
                           )}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Stack direction="row" spacing={1} justifyContent="center">
-                            <Tooltip title="ดูรายละเอียด">
-                              <IconButton 
-                                size="small" 
-                                color="primary"
-                                onClick={() => handleViewDetails(item)}
-                              >
-                                <Visibility />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="แก้ไขชื่อ">
-                              <IconButton 
-                                size="small" 
-                                color="secondary"
-                                onClick={() => {
-                                  setSelectedEquipment(item);
-                                  setNewEquipmentName(item.equipment_name || '');
-                                  setEditingName(true);
-                                }}
-                              >
-                                <Edit />
-                              </IconButton>
-                            </Tooltip>
+                        </Box>
+
+                        <Stack direction="row" spacing={1} alignItems="center" className="text-sm text-slate-500 dark:text-slate-300">
+                          <Chip label={item.equipment_type || item.type || 'ไม่ทราบ'} size="small" variant="outlined" />
+                          {item.metrics_count !== undefined && (
+                            <Chip label={`Metrics ${item.metrics_count}`} size="small" variant="outlined" />
+                          )}
+                          {item.total_records !== undefined && (
+                            <Chip label={`Records ${item.total_records.toLocaleString()}`} size="small" variant="outlined" />
+                          )}
+                        </Stack>
+
+                        <Typography variant="body2" color="text.secondary">
+                          {item.description || 'ไม่มีคำอธิบาย'}
+                        </Typography>
+
+                        <Box className={actionStackClass}>
+                          <Typography variant="caption" color="text.secondary">
+                            {item.last_updated ? new Date(item.last_updated).toLocaleString('th-TH') : 'ไม่มีข้อมูลอัปเดต'}
+                          </Typography>
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<Visibility />}
+                              onClick={() => handleViewDetails(item)}
+                            >
+                              รายละเอียด
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="secondary"
+                              startIcon={<Edit />}
+                              onClick={() => {
+                                setSelectedEquipment(item);
+                                setNewEquipmentName(item.equipment_name || '');
+                                setEditingName(true);
+                              }}
+                            >
+                              แก้ไขชื่อ
+                            </Button>
                           </Stack>
-                        </TableCell>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              ) : (
+                <TableContainer component={Paper} sx={{ mt: 2 }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>สถานะ</TableCell>
+                        <TableCell>รหัสอุปกรณ์</TableCell>
+                        <TableCell>ชื่ออุปกรณ์</TableCell>
+                        <TableCell>ประเภท</TableCell>
+                        <TableCell>คำอธิบาย</TableCell>
+                        <TableCell>ข้อมูลล่าสุด</TableCell>
+                        <TableCell align="center">การจัดการ</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {filteredEquipment.map((item, idx) => (
+                        <TableRow key={item.equipment_id || `eq-${idx}`} hover>
+                          <TableCell>
+                            <Box display="flex" alignItems="center">
+                              {getStatusIcon(item.status)}
+                              <Chip 
+                                label={item.status || 'ไม่ทราบ'}
+                                color={getStatusColor(item.status)}
+                                size="small"
+                                sx={{ ml: 1 }}
+                              />
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight="bold">
+                              {item.equipment_id || 'N/A'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Box>
+                              <Typography variant="body2" fontWeight="bold">
+                                {item.display_name || item.custom_name || item.equipment_name || item.original_name || 'ไม่ระบุ'}
+                              </Typography>
+                              {(
+                                (item.display_name && item.original_name && item.display_name !== item.original_name) ||
+                                (item.custom_name && item.original_name && item.custom_name !== item.original_name)
+                              ) && (
+                                <Typography variant="caption" color="textSecondary">
+                                  เดิม: {item.original_name}
+                                </Typography>
+                              )}
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            {item.equipment_type || item.type || 'ไม่ทราบ'}
+                          </TableCell>
+                          <TableCell>
+                            <Box>
+                              <Typography variant="body2" sx={{ maxWidth: 200 }}>
+                                {item.description || '-'}
+                              </Typography>
+                              <Box sx={{ mt: 0.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                {item.metrics_count !== undefined && (
+                                  <Chip label={`Metrics: ${item.metrics_count}`} size="small" />
+                                )}
+                                {item.total_records !== undefined && (
+                                  <Chip label={`Records: ${item.total_records.toLocaleString()}`} size="small" />
+                                )}
+                              </Box>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            {item.last_updated ? (
+                              <Typography variant="body2">
+                                {new Date(item.last_updated).toLocaleString('th-TH')}
+                              </Typography>
+                            ) : (
+                              <Typography variant="body2" color="textSecondary">
+                                ไม่มีข้อมูล
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Stack direction="row" spacing={1} justifyContent="center">
+                              <Tooltip title="ดูรายละเอียด">
+                                <IconButton 
+                                  size="small" 
+                                  color="primary"
+                                  onClick={() => handleViewDetails(item)}
+                                >
+                                  <Visibility />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="แก้ไขชื่อ">
+                                <IconButton 
+                                  size="small" 
+                                  color="secondary"
+                                  onClick={() => {
+                                    setSelectedEquipment(item);
+                                    setNewEquipmentName(item.equipment_name || '');
+                                    setEditingName(true);
+                                  }}
+                                >
+                                  <Edit />
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )
             )}
           </CardContent>
         </Card>
@@ -524,7 +622,7 @@ const EquipmentPage: React.FC = () => {
 
       {/* No Site Selected */}
       {!selectedSite && (
-        <Card>
+        <Card className={glassCardClass}>
           <CardContent>
             <Box textAlign="center" py={6}>
               <Computer sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} />

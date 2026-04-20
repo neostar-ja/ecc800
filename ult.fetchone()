@@ -1,0 +1,16 @@
+ id
+ site_code
+ equipment_name
+ equipment_id
+ performance_data
+ statistical_period
+ statistical_start_time
+ value_text
+ value_numeric
+ unit
+ data_type
+ source_file
+ import_timestamp
+ data_hash
+ time
+

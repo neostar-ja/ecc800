@@ -31,6 +31,28 @@ import {
 } from '@mui/icons-material';
 import MetricChart from './MetricChart';
 
+// ============================================
+// DATETIME FORMATTING (No Timezone Conversion)
+// ============================================
+/**
+ * Parse ISO datetime string and format without timezone conversion
+ * Input: "2026-01-22T12:30:45+07:00" or "2026-01-22 12:30:45"
+ * Output: "22/01/2026 12:30:45"
+ */
+const formatDateTimeNoTz = (timestamp: string | null | undefined): string => {
+  if (!timestamp) return '-';
+  try {
+    const match = timestamp.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/i);
+    if (match) {
+      const [, year, month, day, hour, minute, second = '00'] = match;
+      return `${day}/${month}/${year} ${hour}:${minute}:${second}`;
+    }
+    return timestamp;
+  } catch {
+    return timestamp;
+  }
+};
+
 interface MetricValue {
   timestamp: string;
   value: number;
@@ -163,15 +185,8 @@ const AdvancedMetricAnalysis: React.FC<AdvancedMetricAnalysisProps> = ({ data, o
     const rows: string[] = [header.join(',')];
 
     const human = (ts: string) => {
-      try {
-        const d = new Date(ts);
-        return d.toLocaleString('th-TH', {
-          year: 'numeric', month: '2-digit', day: '2-digit',
-          hour: '2-digit', minute: '2-digit', second: '2-digit'
-        });
-      } catch {
-        return ts;
-      }
+      // Use regex to parse without timezone conversion
+      return formatDateTimeNoTz(ts);
     };
 
     for (const p of data.data_points) {
@@ -283,8 +298,8 @@ const AdvancedMetricAnalysis: React.FC<AdvancedMetricAnalysisProps> = ({ data, o
                 />
                 
                 <Typography variant="body2" color="textSecondary" mt={2}>
-                  ⏰ ช่วงข้อมูล: {new Date(data.time_range.from).toLocaleString('th-TH')} 
-                  {' → '} {new Date(data.time_range.to).toLocaleString('th-TH')}
+                  ⏰ ช่วงข้อมูล: {formatDateTimeNoTz(data.time_range.from)} 
+                  {' → '} {formatDateTimeNoTz(data.time_range.to)}
                   {' | '} รวมข้อมูลทุก: {data.time_range.interval}
                 </Typography>
               </CardContent>
@@ -555,7 +570,7 @@ const AdvancedMetricAnalysis: React.FC<AdvancedMetricAnalysisProps> = ({ data, o
                   {data.data_points.slice(0, 100).map((point, index) => (
                     <TableRow key={index} hover>
                       <TableCell>
-                        {new Date(point.timestamp).toLocaleString('th-TH')}
+                        {formatDateTimeNoTz(point.timestamp)}
                       </TableCell>
                       <TableCell align="right">
                         <strong>{point.value.toFixed(3)}</strong>

@@ -25,6 +25,15 @@ from app.routers.enhanced_metrics import router as enhanced_metrics_router
 from app.routers.enhanced_faults import router as enhanced_faults_router
 from app.routers.simple_enhanced_metrics import router as simple_enhanced_metrics_router
 from app.routers.dashboard import router as dashboard_router
+from app.routers.dashboard_realtime import router as dashboard_realtime_router
+from app.routers.sensors import router as sensors_router
+
+# Import Role-based Access Control and Keycloak routers
+from app.api.routes.roles import router as roles_router
+from app.api.routes.menu_items import router as menu_items_router
+from app.api.routes.permissions import router as permissions_router
+from app.api.routes.keycloak import router as keycloak_router
+from app.routers.pipeline import router as pipeline_router
 
 # Get settings instance
 settings = get_settings()
@@ -63,7 +72,7 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins + ["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -106,9 +115,33 @@ print(f"✅ Enhanced Metrics router registered with {len(enhanced_metrics_router
 app.include_router(enhanced_faults_router, prefix=settings.API_PREFIX, tags=["Enhanced Faults"])
 print(f"✅ Enhanced Faults router registered with {len(enhanced_faults_router.routes)} routes")
 
-# Include Dashboard router
+# Include Dashboard routers
 app.include_router(dashboard_router, prefix=settings.API_PREFIX, tags=["Dashboard"])
 print(f"✅ Dashboard router registered with {len(dashboard_router.routes)} routes")
+app.include_router(dashboard_realtime_router, prefix=settings.API_PREFIX, tags=["Dashboard"])
+print(f"✅ Dashboard Realtime router registered with {len(dashboard_realtime_router.routes)} routes")
+
+# Include Sensors router
+app.include_router(sensors_router, prefix=settings.API_PREFIX, tags=["Sensors"])
+print(f"✅ Sensors router registered with {len(sensors_router.routes)} routes")
+
+# Include Role-based Access Control routers
+app.include_router(roles_router, prefix=settings.API_PREFIX, tags=["Roles"])
+print(f"✅ Roles router registered with {len(roles_router.routes)} routes")
+
+app.include_router(menu_items_router, prefix=settings.API_PREFIX, tags=["Menu Items"])
+print(f"✅ Menu Items router registered with {len(menu_items_router.routes)} routes")
+
+app.include_router(permissions_router, prefix=settings.API_PREFIX, tags=["Permissions"])
+print(f"✅ Permissions router registered with {len(permissions_router.routes)} routes")
+
+# Include Keycloak SSO router (router มี prefix="/keycloak" อยู่แล้วในไฟล์ keycloak.py)
+app.include_router(keycloak_router, prefix=f"{settings.API_PREFIX}/keycloak", tags=["Keycloak SSO"])
+print(f"✅ Keycloak SSO router registered with {len(keycloak_router.routes)} routes")
+
+# Include Pipeline router
+app.include_router(pipeline_router, prefix=f"{settings.API_PREFIX}/pipeline", tags=["Pipeline"])
+print(f"✅ Pipeline router registered with {len(pipeline_router.routes)} routes")
 
 print(f"✅ All routers registered successfully")
 print(f"✅ Total API routes registered: {len(app.routes)}")

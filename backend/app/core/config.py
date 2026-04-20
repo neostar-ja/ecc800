@@ -16,10 +16,10 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "ecc800"
     POSTGRES_USER: str = "ecc800"
-    POSTGRES_PASSWORD: str = "password"
+    POSTGRES_PASSWORD: str = "change-me"
 
     # JWT Configuration - การตั้งค่า JWT
-    JWT_SECRET: str = "your-secret-key-change-in-production"
+    JWT_SECRET: str = "change-this-jwt-secret"
     JWT_EXPIRES_HOURS: int = 24
     JWT_ALGORITHM: str = "HS256"
 
@@ -35,6 +35,7 @@ class Settings(BaseSettings):
 
     # Security: Allow public (no-auth) metrics endpoints - default False for production
     ALLOW_PUBLIC_METRICS: bool = False
+    ALLOW_DEV_TOKEN: bool = False
     
     # Admin users
     admin_username: str = "admin"

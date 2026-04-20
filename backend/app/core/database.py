@@ -86,7 +86,16 @@ async def execute_raw_query(query: str, params=None):
                 query_params = params
                 
             result = await session.execute(text(query), query_params)
-            if query.strip().upper().startswith('SELECT'):
+            
+            # Check if this is a SELECT query (can start with SELECT, WITH, or have SELECT in parentheses)
+            query_upper = query.strip().upper()
+            is_select = (
+                query_upper.startswith('SELECT') or 
+                query_upper.startswith('WITH') or
+                'SELECT' in query_upper
+            )
+            
+            if is_select:
                 rows = result.fetchall()
                 if rows:
                     # Convert to dict format

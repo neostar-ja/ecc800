@@ -179,6 +179,8 @@ const ImprovedFaultsPage: React.FC = () => {
     queryKey: ['equipment', selectedSite],
     queryFn: () => fetchEquipment(selectedSite),
     enabled: !!selectedSite,
+    staleTime: 10 * 60 * 1000, // 10 minutes - equipment rarely changes
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
   });
 
   const timeRangesQuery = useQuery({

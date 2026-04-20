@@ -9,6 +9,10 @@ set -e  # Exit on error
 echo "🚀 Building and starting complete ECC800 system..."
 echo "================================================="
 
+# Always run from the script's directory (project root)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 # Check if we're in the right directory
 if [ ! -f "compose.yaml" ] && [ ! -f "docker-compose.yml" ]; then
     echo "❌ Error: Must run from ecc800 project root directory"
@@ -138,6 +142,16 @@ $COMPOSE_CMD up -d frontend
 
 # Wait for frontend
 wait_for_health frontend 20
+
+# Copy fresh build to frontend container
+echo "📦 Copying fresh frontend build to container..."
+docker cp frontend/dist/. ecc800-frontend:/usr/share/nginx/html/
+echo "✅ Fresh frontend build copied successfully"
+
+# Reload frontend nginx to clear cache
+echo "🔄 Reloading frontend nginx..."
+docker exec ecc800-frontend nginx -s reload
+echo "✅ Frontend nginx reloaded"
 
 # Start reverse proxy
 echo "▶️  Starting reverse proxy..."

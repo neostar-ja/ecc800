@@ -93,7 +93,7 @@ const SafeModernRackItem = React.memo(({
   
   useEffect(() => {
     // Ensure component is ready before rendering Konva elements
-    let timeoutId: number;
+  let timeoutId: ReturnType<typeof setTimeout>;
     setIsMounted(true);
     
     timeoutId = setTimeout(() => {
@@ -531,7 +531,7 @@ const SafeEnhancedDataCenterView = React.memo(({
   // Component mount state with enhanced safety
   useEffect(() => {
     console.log('SafeEnhancedDataCenterView mounting...');
-    let timeoutId: number;
+  let timeoutId: ReturnType<typeof setTimeout>;
     
     setIsComponentMounted(true);
     

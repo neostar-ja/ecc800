@@ -22,7 +22,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/users", response_model=List[UserResponse])
+@router.get("/users/", response_model=List[UserResponse])
 async def list_users(
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
@@ -77,7 +77,7 @@ async def list_users(
         )
 
 
-@router.get("/users/{user_id}", response_model=UserResponse)
+@router.get("/users/{user_id}/", response_model=UserResponse)
 async def get_user(
     user_id: int,
     current_user: User = Depends(get_admin_user),
@@ -116,7 +116,7 @@ async def get_user(
         )
 
 
-@router.post("/users", response_model=UserResponse)
+@router.post("/users/", response_model=UserResponse)
 async def create_user(
     user_data: UserCreate,
     current_user: User = Depends(get_admin_user),
@@ -190,7 +190,7 @@ async def create_user(
         )
 
 
-@router.put("/users/{user_id}", response_model=UserResponse)
+@router.put("/users/{user_id}/", response_model=UserResponse)
 async def update_user(
     user_id: int,
     user_data: UserUpdate,
@@ -290,7 +290,7 @@ async def update_user(
         )
 
 
-@router.delete("/users/{user_id}")
+@router.delete("/users/{user_id}/")
 async def delete_user(
     user_id: int,
     current_user: User = Depends(get_admin_user),
@@ -338,7 +338,7 @@ async def delete_user(
         )
 
 
-@router.post("/users/{user_id}/change-password")
+@router.post("/users/{user_id}/change-password/")
 async def admin_change_password(
     user_id: int,
     new_password: str,
@@ -398,7 +398,7 @@ async def admin_change_password(
         )
 
 
-@router.post("/change-password")
+@router.post("/change-password/")
 async def change_own_password(
     request: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
@@ -453,24 +453,7 @@ async def change_own_password(
         )
 
 
-@router.get("/roles")
-async def get_available_roles(
-    # current_user: User = Depends(get_admin_user)
-):
-    """
-    รายการ roles ที่มี
-    Available roles
-    """
-    return {
-        "roles": [
-            {"value": "admin", "label": "Administrator", "description": "Full system access"},
-            {"value": "analyst", "label": "Data Analyst", "description": "Data analysis and reporting"},
-            {"value": "viewer", "label": "Viewer", "description": "View-only access"}
-        ]
-    }
-
-
-@router.get("/stats")
+@router.get("/stats/")
 async def get_user_stats(
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)

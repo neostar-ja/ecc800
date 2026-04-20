@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Typography,
@@ -26,24 +27,102 @@ import {
   DarkMode,
   LightMode,
   AccountCircle,
-  Logout
+  Logout,
+  Security
 } from '@mui/icons-material';
 import { useAuthStore } from '../stores/authStore';
 import { api } from '../lib/api';
 import { useTheme as useCustomTheme } from '../contexts/ThemeProvider';
+import { keycloakApi, KeycloakPublicConfig } from '../services/authExtended';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [keycloakLoading, setKeycloakLoading] = useState(false);
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [keycloakConfig, setKeycloakConfig] = useState<KeycloakPublicConfig | null>(null);
   
   const { login, isAuthenticated } = useAuthStore();
   const { isDarkMode, toggleTheme } = useCustomTheme();
   const theme = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
+
+  // Fetch Keycloak config on mount
+  useEffect(() => {
+    const fetchKeycloakConfig = async () => {
+      try {
+        const config = await keycloakApi.getPublicConfig();
+        setKeycloakConfig(config);
+      } catch (error) {
+        console.log('Keycloak config not available');
+      }
+    };
+    fetchKeycloakConfig();
+  }, []);
+
+  // Handle Keycloak callback
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    
+    if (code && state) {
+      handleKeycloakCallback(code, state);
+    }
+  }, [location.search]);
+
+  const handleKeycloakCallback = async (code: string, state: string) => {
+    setKeycloakLoading(true);
+    setError('');
+    
+    try {
+      const response = await keycloakApi.handleCallback(code, state);
+      const { access_token, user } = response;
+      
+      // Store token and user data (add is_active as it's required by User interface)
+      localStorage.setItem('token', access_token);
+      useAuthStore.setState({
+        token: access_token,
+        user: {
+          ...user,
+          is_active: true  // Keycloak users are active by default
+        },
+        isAuthenticated: true,
+      });
+      
+      // Clear URL params and navigate
+      window.history.replaceState({}, document.title, window.location.pathname);
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Keycloak callback error:', error);
+      setError(error.response?.data?.detail || 'Keycloak authentication failed');
+      // Clear URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } finally {
+      setKeycloakLoading(false);
+    }
+  };
+
+  const handleKeycloakLogin = async () => {
+    setKeycloakLoading(true);
+    setError('');
+    
+    try {
+      const response = await keycloakApi.initiateLogin();
+      // Redirect to Keycloak login page
+      window.location.href = response.auth_url;
+    } catch (error: any) {
+      console.error('Keycloak login error:', error);
+      setError(error.response?.data?.detail || 'ไม่สามารถเชื่อมต่อ Keycloak ได้');
+      setKeycloakLoading(false);
+    }
+  };
+
     // Redirect if already authenticated
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -76,6 +155,13 @@ const LoginPage: React.FC = () => {
         user: user,
         isAuthenticated: true,
       });
+      
+      // Invalidate permissions cache to force refetch with new token
+      queryClient.invalidateQueries({ queryKey: ['currentUserPermissions'] });
+      
+      // Wait a bit for permissions to load before navigating
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       navigate('/dashboard');
       
     } catch (error: any) {
@@ -119,7 +205,12 @@ const LoginPage: React.FC = () => {
       overflow: 'hidden'
     }}>
       {/* Theme Toggle */}
-      <Box sx={{ position: 'absolute', top: 24, right: 24, zIndex: 10 }}>
+      <Box sx={{ 
+        position: 'absolute', 
+        top: { xs: 16, sm: 24 }, 
+        right: { xs: 16, sm: 24 }, 
+        zIndex: 10 
+      }}>
         <IconButton
           onClick={toggleTheme}
           sx={{
@@ -144,8 +235,8 @@ const LoginPage: React.FC = () => {
         position: 'absolute', 
         top: '-50%', 
         left: '-10%', 
-        width: '800px', 
-        height: '800px', 
+        width: { xs: '400px', sm: '600px', md: '800px' }, 
+        height: { xs: '400px', sm: '600px', md: '800px' }, 
         borderRadius: '50%',
         background: isDarkMode 
           ? 'radial-gradient(circle, rgba(123, 91, 164, 0.1) 0%, rgba(123, 91, 164, 0) 70%)' 
@@ -157,8 +248,8 @@ const LoginPage: React.FC = () => {
         position: 'absolute', 
         bottom: '-30%', 
         right: '-5%', 
-        width: '700px', 
-        height: '700px', 
+        width: { xs: '350px', sm: '500px', md: '700px' }, 
+        height: { xs: '350px', sm: '500px', md: '700px' }, 
         borderRadius: '50%',
         background: isDarkMode 
           ? 'radial-gradient(circle, rgba(241, 116, 34, 0.1) 0%, rgba(241, 116, 34, 0) 70%)' 
@@ -170,12 +261,13 @@ const LoginPage: React.FC = () => {
       <Paper
         elevation={isDarkMode ? 4 : 2}
         sx={{
-          width: '90%',
-          maxWidth: 1000,
-          borderRadius: 4,
+          width: { xs: '95%', sm: '90%', md: '90%' },
+          maxWidth: { xs: '100%', sm: 800, md: 1000 },
+          minHeight: { xs: 'auto', sm: 'auto' },
+          borderRadius: { xs: 2, sm: 4 },
           overflow: 'hidden',
           display: 'flex',
-          flexDirection: 'row',
+          flexDirection: { xs: 'column', md: 'row' },
           background: isDarkMode ? 'rgba(22, 28, 41, 0.9)' : 'rgba(255, 255, 255, 0.9)',
           backdropFilter: 'blur(20px)',
           border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
@@ -187,8 +279,8 @@ const LoginPage: React.FC = () => {
       >
         {/* Logo Section */}
         <Box sx={{ 
-          width: '30%',
-          p: 4, 
+          width: { xs: '100%', md: '30%' },
+          p: { xs: 3, sm: 4 }, 
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -196,9 +288,12 @@ const LoginPage: React.FC = () => {
           background: isDarkMode 
             ? 'linear-gradient(135deg, rgba(123, 91, 164, 0.1) 0%, rgba(241, 116, 34, 0.1) 100%)' 
             : 'linear-gradient(135deg, rgba(123, 91, 164, 0.05) 0%, rgba(241, 116, 34, 0.05) 100%)',
-          borderRight: isDarkMode 
+          borderRight: { xs: 'none', md: isDarkMode 
             ? '1px solid rgba(255, 255, 255, 0.05)' 
-            : '1px solid rgba(0, 0, 0, 0.05)'
+            : '1px solid rgba(0, 0, 0, 0.05)' },
+          borderBottom: { xs: isDarkMode 
+            ? '1px solid rgba(255, 255, 255, 0.05)' 
+            : '1px solid rgba(0, 0, 0, 0.05)', md: 'none' }
         }}>
           <Zoom in timeout={500}>
             <Box sx={{ textAlign: 'center' }}>
@@ -207,28 +302,31 @@ const LoginPage: React.FC = () => {
                 src="/wuh_logo.png"
                 alt="Walailak University Hospital Logo"
                 sx={{ 
-                  width: 140,
-                  height: 140,
+                  width: { xs: 100, sm: 120, md: 140 },
+                  height: { xs: 100, sm: 120, md: 140 },
                   objectFit: 'contain',
-                  mb: 3
+                  mb: { xs: 2, sm: 3 }
                 }}
               />
               <Typography variant="h5" sx={{ 
                 fontWeight: 700,
                 mb: 1,
+                fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.5rem' },
                 color: isDarkMode ? '#fff' : '#333',
               }}>
-                ECC800 Monitor
+                WUH Data Center Monitor
               </Typography>
               <Typography variant="body2" sx={{ 
                 color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
-                mb: 2
+                mb: 2,
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
               }}>
                 ศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์
               </Typography>
               <Typography variant="caption" sx={{ 
                 color: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
-                display: 'block'
+                display: 'block',
+                fontSize: { xs: '0.7rem', sm: '0.75rem' }
               }}>
                 กลุ่มงานโครงสร้างพื้นฐานดิจิทัลทางการแพทย์
               </Typography>
@@ -238,18 +336,19 @@ const LoginPage: React.FC = () => {
 
         {/* Form Section */}
         <Box sx={{ 
-          width: '70%',
-          p: 4,
+          width: { xs: '100%', md: '70%' },
+          p: { xs: 3, sm: 4 },
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center'
         }}>
           <Fade in timeout={500}>
             <Box>
-              <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Box sx={{ textAlign: 'center', mb: { xs: 3, sm: 4 } }}>
                 <Typography variant="h4" sx={{ 
                   fontWeight: 700,
                   mb: 1,
+                  fontSize: { xs: '1.75rem', sm: '2rem', md: '2.125rem' },
                   background: 'linear-gradient(45deg, #7B5BA4, #F17422)',
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
@@ -258,9 +357,10 @@ const LoginPage: React.FC = () => {
                   เข้าสู่ระบบ
                 </Typography>
                 <Typography variant="body2" sx={{ 
-                  color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+                  color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                  fontSize: { xs: '0.875rem', sm: '0.875rem' }
                 }}>
-                  กรุณาเข้าสู่ระบบเพื่อใช้งาน ECC800 Monitor
+                  กรุณาเข้าสู่ระบบเพื่อใช้งาน WUH Data Center Monitor
                 </Typography>
               </Box>
 
@@ -287,7 +387,7 @@ const LoginPage: React.FC = () => {
                 component="form" 
                 onSubmit={handleLogin}
                 sx={{ 
-                  maxWidth: 450,
+                  maxWidth: { xs: '100%', sm: 450 },
                   mx: 'auto'
                 }}
               >
@@ -299,7 +399,7 @@ const LoginPage: React.FC = () => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     sx={{ 
-                      mb: 3,
+                      mb: { xs: 2, sm: 3 },
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
                         backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
@@ -335,7 +435,7 @@ const LoginPage: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     sx={{ 
-                      mb: 3,
+                      mb: { xs: 2, sm: 3 },
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
                         backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
@@ -374,7 +474,7 @@ const LoginPage: React.FC = () => {
                 </Zoom>
 
                 {/* Remember Me */}
-                <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ mb: { xs: 2, sm: 3 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -394,8 +494,8 @@ const LoginPage: React.FC = () => {
                 </Box>
 
                 {/* Login Buttons */}
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                <Grid container spacing={{ xs: 2, sm: 2 }}>
+                  <Grid item xs={12}>
                     <Zoom in timeout={800}>
                       <Button
                         type="submit"
@@ -405,7 +505,7 @@ const LoginPage: React.FC = () => {
                         disabled={loading}
                         startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Login />}
                         sx={{
-                          py: 1.5,
+                          py: { xs: 1.25, sm: 1.5 },
                           borderRadius: 2,
                           fontWeight: 600,
                           backgroundColor: '#7B5BA4',
@@ -420,35 +520,45 @@ const LoginPage: React.FC = () => {
                       </Button>
                     </Zoom>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12}>
                     <Zoom in timeout={900}>
                       <Button
                         fullWidth
                         variant="outlined"
                         size="large"
+                        onClick={handleKeycloakLogin}
+                        disabled={keycloakLoading || !keycloakConfig?.is_enabled}
                         sx={{
-                          py: 1.5,
+                          py: { xs: 1.25, sm: 1.5 },
                           borderRadius: 2,
                           fontWeight: 600,
-                          borderColor: '#F17422',
-                          color: '#F17422',
+                          borderColor: keycloakConfig?.is_enabled ? '#F17422' : 'grey.400',
+                          color: keycloakConfig?.is_enabled ? '#F17422' : 'grey.500',
                           transition: 'all 0.3s ease',
                           '&:hover': {
                             borderColor: '#e05e00',
                             color: '#e05e00',
                             backgroundColor: 'rgba(241, 116, 34, 0.05)',
                             boxShadow: '0 6px 20px rgba(241, 116, 34, 0.2)'
+                          },
+                          '&.Mui-disabled': {
+                            borderColor: 'grey.400',
+                            color: 'grey.500'
                           }
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Box 
-                            component="img" 
-                            src="https://www.keycloak.org/resources/images/keycloak_icon_512px.svg" 
-                            alt="Keycloak" 
-                            sx={{ width: 20, height: 20 }} 
-                          />
-                          Keycloak SSO
+                          {keycloakLoading ? (
+                            <CircularProgress size={20} color="inherit" />
+                          ) : (
+                            <Security 
+                              sx={{ 
+                                fontSize: 20,
+                                color: keycloakConfig?.is_enabled ? '#F17422' : 'grey.500'
+                              }} 
+                            />
+                          )}
+                          {keycloakLoading ? 'กำลังเชื่อมต่อ...' : keycloakConfig?.is_enabled ? 'Keycloak SSO' : 'Keycloak SSO (ปิดใช้งาน)'}
                         </Box>
                       </Button>
                     </Zoom>
@@ -471,10 +581,11 @@ const LoginPage: React.FC = () => {
                 )}
 
                 {/* Footer */}
-                <Divider sx={{ mt: 4, mb: 2 }} />
+                <Divider sx={{ mt: { xs: 3, sm: 4 }, mb: 2 }} />
                 <Typography variant="caption" sx={{ 
                   display: 'block',
                   textAlign: 'center',
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
                   color: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'
                 }}>
                   © 2025 กลุ่มงานโครงสร้างพื้นฐานดิจิทัลทางการแพทย์

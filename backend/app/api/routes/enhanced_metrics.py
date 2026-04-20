@@ -10,8 +10,8 @@ from pydantic import BaseModel
 import logging
 
 from app.core.database import get_db, execute_raw_query
-from app.services.auth import get_current_user
-from app.schemas.auth import User
+from app.auth.dependencies import get_current_user
+from app.models.models import User
 from app.schemas.sites import DetailedMetricResponse, MetricInfo, MetricStats, MetricValue
 
 router = APIRouter()
@@ -45,17 +45,39 @@ def _safe_float(v, default=0.0):
 
 
 def _safe_datetime(v, default=None):
+    """แปลง datetime ให้ปลอดภัย
+    
+    ข้อมูลในฐานข้อมูลถูกบันทึกเป็น Bangkok time (UTC+7) แล้ว
+    ส่งตรงๆ ไปที่ frontend โดยไม่ต้องแปลง
+    """
     if v is None:
         return default or datetime(1970, 1, 1)
     if isinstance(v, datetime):
         return v
     try:
-        return datetime.fromisoformat(str(v))
+        dt = datetime.fromisoformat(str(v))
+        return dt
     except Exception:
         try:
-            return datetime.fromtimestamp(float(v))
+            dt = datetime.fromtimestamp(float(v))
+            return dt
         except Exception:
             return default or datetime(1970, 1, 1)
+
+
+def _datetime_to_iso_bangkok(dt):
+    """แปลง datetime เป็น ISO format
+    
+    ข้อมูลในฐานข้อมูลเก็บเป็น Bangkok time (UTC+7) อยู่แล้ว
+    ส่ง ISO format โดยไม่ต้องเพิ่ม timezone suffix
+    Frontend ใช้ regex parse โดยไม่สนใจ timezone อยู่แล้ว
+    """
+    if dt is None:
+        return None
+    if isinstance(dt, datetime):
+        # ส่ง ISO format โดยไม่เพิ่ม timezone suffix
+        return dt.isoformat()
+    return None
 
 
 # Response Models
@@ -183,16 +205,30 @@ def categorize_metric(metric_name: str, unit: str) -> Dict[str, str]:
 async def get_enhanced_metrics(
     site_code: Optional[str] = Query(None, description="รหัสไซต์"),
     equipment_id: Optional[str] = Query(None, description="รหัสอุปกรณ์"),
+    period: Optional[str] = Query('7d', description="ช่วงเวลา (1d, 7d, 30d, 90d)"),
     current_user: User = Depends(get_current_user),
     db = Depends(get_db)
 ):
     """
-    ดึงรายชื่อ metrics แบบเรียบง่าย ไม่แบ่งกลุ่ม
+    ดึงรายชื่อ metrics แบบเรียบง่าย ไม่แบ่งกลุ่ม (Optimized with time filter)
     Get simple metrics list without categories
     """
     try:
+        # Calculate time range based on period for better performance
+        period_map = {
+            '1d': timedelta(days=1),
+            '7d': timedelta(days=7),
+            '30d': timedelta(days=30),
+            '90d': timedelta(days=90),
+        }
+        delta = period_map.get(period, timedelta(days=7))
+        # ใช้ Bangkok timezone (UTC+7) เพื่อให้ตรงกับเวลาในฐานข้อมูล
+        bangkok_tz = timezone(timedelta(hours=7))
+        from_time = datetime.now(bangkok_tz).replace(tzinfo=None) - delta
+        
         conditions = ["performance_data IS NOT NULL"]
-        params = {}
+        conditions.append("statistical_start_time >= :from_time")  # Critical for performance!
+        params = {"from_time": from_time}
         
         if site_code:
             conditions.append("site_code = :site_code")
@@ -204,6 +240,7 @@ async def get_enhanced_metrics(
         
         where_clause = " AND ".join(conditions)
         
+        # Optimized query with time filter - dramatically faster on hypertables
         query = f"""
         WITH metric_stats AS (
             SELECT 
@@ -244,6 +281,7 @@ async def get_enhanced_metrics(
             lv.latest_time
         FROM metric_stats ms
         LEFT JOIN latest_values lv ON ms.metric_name = lv.performance_data
+        WHERE ms.valid_readings > 0  -- Filter out metrics with no valid numeric data
         ORDER BY ms.valid_readings DESC, ms.metric_name;
         """
         
@@ -304,16 +342,24 @@ async def get_enhanced_metrics(
                     trend = "unknown"
                 
                 # Build plain dict with safe coercion to avoid Pydantic validation errors
+                latest_time_raw = row.get('latest_time')
+                latest_time_converted = _safe_datetime(latest_time_raw) if latest_time_raw else None
+                latest_time_iso = _datetime_to_iso_bangkok(latest_time_converted) if latest_time_converted else None
+                
+                # Debug logging for timezone fix - ใช้ logger.warning เพื่อให้แน่ใจว่าแสดงผล
+                if latest_time_raw:
+                    logger.warning(f"[TIMEZONE_DEBUG] {row.get('metric_name')}: raw={latest_time_raw}, converted={latest_time_converted}, iso={latest_time_iso}")
+                
                 metric_dict = {
                     'metric_name': row.get('metric_name'),
                     'display_name': row.get('metric_name'),
                     'unit': row.get('unit') or '',
                     'data_points': _safe_int(row.get('data_points')),
                     'valid_readings': _safe_int(row.get('valid_readings')),
-                    'first_seen': _safe_datetime(row.get('first_seen')).isoformat() if row.get('first_seen') else None,
-                    'last_seen': _safe_datetime(row.get('last_seen')).isoformat() if row.get('last_seen') else None,
+                    'first_seen': _datetime_to_iso_bangkok(_safe_datetime(row.get('first_seen'))) if row.get('first_seen') else None,
+                    'last_seen': _datetime_to_iso_bangkok(_safe_datetime(row.get('last_seen'))) if row.get('last_seen') else None,
                     'latest_value': _safe_float(row.get('latest_value')),
-                    'latest_time': _safe_datetime(row.get('latest_time')).isoformat() if row.get('latest_time') else None,
+                    'latest_time': latest_time_iso,
                     'avg_value': _safe_float(row.get('avg_value')),
                     'min_value': _safe_float(row.get('min_value')),
                     'max_value': _safe_float(row.get('max_value')),
@@ -341,9 +387,9 @@ async def get_enhanced_metrics(
             detail=f"ไม่สามารถดึงข้อมูล metrics: {str(e)}"
         )
 
-@router.get("/metric/{metric_name}/details", response_model=DetailedMetricResponse)
+@router.get("/metric/details", response_model=DetailedMetricResponse)
 async def get_metric_details(
-    metric_name: str,
+    metric_name: str = Query(..., description="ชื่อ metric"),
     site_code: str = Query(..., description="รหัสไซต์"),
     equipment_id: str = Query(..., description="รหัสอุปกรณ์"),
     period: str = Query("24h", description="ช่วงเวลา (1h, 4h, 24h, 3d, 7d, 30d, custom)"),
@@ -359,7 +405,9 @@ async def get_metric_details(
     """
     try:
         # Calculate time range
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        # ใช้ Bangkok timezone (UTC+7) เพื่อให้ตรงกับเวลาในฐานข้อมูล
+        bangkok_tz = timezone(timedelta(hours=7))
+        now = datetime.now(bangkok_tz).replace(tzinfo=None)
         
         if period == "custom" and start_time and end_time:
             from_time = start_time.replace(tzinfo=None) if start_time.tzinfo else start_time
@@ -424,7 +472,40 @@ async def get_metric_details(
         stats_result = await execute_raw_query(stats_query, stats_params)
         
         if not stats_result:
-            raise HTTPException(status_code=404, detail="ไม่พบข้อมูลสำหรับ metric นี้")
+            # Return empty response instead of 404 for metrics with no valid data
+            metric_info = categorize_metric(metric_name, "N/A")
+            return DetailedMetricResponse(
+                metric=MetricInfo(
+                    metric_name=metric_name,
+                    display_name=metric_name,
+                    unit="N/A",
+                    data_points=0,
+                    first_seen=None,
+                    last_seen=None,
+                    category=metric_info['category'],
+                    description=f"{metric_info['description']} (ไม่มีข้อมูล)",
+                    icon=metric_info['icon'],
+                    color=metric_info['color']
+                ),
+                statistics=MetricStats(
+                    min=0.0,
+                    max=0.0,
+                    avg=0.0,
+                    median=0.0,
+                    std_dev=0.0,
+                    count=0,
+                    latest=0.0,
+                    trend="stable"
+                ),
+                data_points=[],
+                time_range={
+                    "from": from_time.isoformat(),
+                    "to": to_time.isoformat(),
+                    "interval": pg_interval
+                },
+                site_code=site_code,
+                equipment_id=equipment_id
+            )
 
         # Normalize stat_row to dict to avoid attribute access errors
         stat_row = stats_result[0]
@@ -591,22 +672,42 @@ async def get_site_equipment(
     db = Depends(get_db)
 ):
     """
-    ดึงรายชื่ออุปกรณ์ในไซต์ที่ระบุ
+    ดึงรายชื่ออุปกรณ์ในไซต์ที่ระบุ (Optimized with TimescaleDB)
     Get equipment list for specific site
     """
     try:
+        # Optimized: Use recent data only (last 7 days) for active equipment detection
+        # This dramatically reduces scan time on large hypertables
         query = """
-        SELECT DISTINCT 
-            pd.site_code,
-            pd.equipment_id,
-            COALESCE(eno.display_name, pem.equipment_name, pd.equipment_id) as display_name,
-            COUNT(DISTINCT pd.performance_data) as metric_count
-        FROM performance_data pd
-        LEFT JOIN equipment_name_overrides eno ON pd.site_code = eno.site_code AND pd.equipment_id = eno.equipment_id
-        LEFT JOIN performance_equipment_master pem ON pd.equipment_id = pem.equipment_id
-        WHERE pd.site_code = :site_code
-        GROUP BY pd.site_code, pd.equipment_id, eno.display_name, pem.equipment_name
-        ORDER BY display_name, pd.equipment_id;
+        WITH recent_equipment AS (
+            SELECT DISTINCT 
+                site_code,
+                equipment_id
+            FROM performance_data
+            WHERE site_code = :site_code
+            AND statistical_start_time >= NOW() - INTERVAL '7 days'
+        ),
+        equipment_metrics AS (
+            SELECT 
+                re.site_code,
+                re.equipment_id,
+                COUNT(DISTINCT pd.performance_data) as metric_count
+            FROM recent_equipment re
+            LEFT JOIN performance_data pd ON 
+                re.site_code = pd.site_code 
+                AND re.equipment_id = pd.equipment_id
+                AND pd.statistical_start_time >= NOW() - INTERVAL '7 days'
+            GROUP BY re.site_code, re.equipment_id
+        )
+        SELECT 
+            em.site_code,
+            em.equipment_id,
+            COALESCE(eno.display_name, pem.equipment_name, em.equipment_id) as display_name,
+            em.metric_count
+        FROM equipment_metrics em
+        LEFT JOIN equipment_name_overrides eno ON em.site_code = eno.site_code AND em.equipment_id = eno.equipment_id
+        LEFT JOIN performance_equipment_master pem ON em.equipment_id = pem.equipment_id
+        ORDER BY display_name, em.equipment_id;
         """
         
         params = {"site_code": site_code}
@@ -755,7 +856,7 @@ async def get_equipment_metrics_summary(
                     "color": metric_info["color"],
                     "unit": row.get("unit") or "",
                     "latest_value": _safe_float(row.get("latest_value")),
-                    "latest_time": _safe_datetime(row.get("latest_time")).isoformat() if row.get("latest_time") else None,
+                    "latest_time": _datetime_to_iso_bangkok(_safe_datetime(row.get("latest_time"))) if row.get("latest_time") else None,
                     "avg_value": _safe_float(row.get("avg_value")),
                     "min_value": _safe_float(row.get("min_value")),
                     "max_value": _safe_float(row.get("max_value")),
