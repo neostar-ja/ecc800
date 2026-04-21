@@ -604,9 +604,9 @@ const RoomEnvironmentCard: React.FC<RoomEnvironmentCardProps> = ({
   const getStatusLabel = (val: number | null, type: 'temp' | 'humid') => {
     if (!val) return 'N/A';
     if (type === 'temp') {
-      return val >= 30 ? 'High' : val >= 28 ? 'Warning' : 'Normal';
+      return val >= 30 ? 'สูง' : val >= 28 ? 'เตือน' : 'ปกติ';
     }
-    return val >= 70 ? 'High' : val >= 60 ? 'Warning' : 'Normal';
+    return val >= 70 ? 'สูง' : val >= 60 ? 'เตือน' : 'ปกติ';
   };
 
   const MetricCard = ({ 
@@ -797,10 +797,10 @@ const RoomEnvironmentCard: React.FC<RoomEnvironmentCardProps> = ({
           </Box>
           <Box>
             <Typography variant="h6" fontWeight="bold" color="#f97316" letterSpacing={-0.5}>
-              สิ่งแวดล้อมห้อง
+              สภาวะห้อง
             </Typography>
             <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
-              อุณหภูมิ/ความชื้นของห้อง
+              อุณหภูมิและความชื้น
             </Typography>
           </Box>
         </Box>
@@ -832,15 +832,15 @@ const RoomEnvironmentCard: React.FC<RoomEnvironmentCardProps> = ({
             borderRadius={2}
           >
             <Thermostat sx={{ color: '#ef4444', fontSize: 20 }} />
-            <Typography variant="caption" fontWeight="bold" color="#ef4444" textTransform="uppercase" letterSpacing={0.5}>
-              Temperature Monitoring
+            <Typography variant="caption" fontWeight="bold" color="#ef4444" letterSpacing={0.5}>
+              ตรวจสอบอุณหภูมิ
             </Typography>
           </Box>
         </Grid>
         
         <Grid item xs={6}>
           <MetricCard
-            label="Front Temperature"
+            label="อุณหภูมิด้านหน้า"
             value={frontTemp}
             unit="°C"
             icon="🌡️"
@@ -851,7 +851,7 @@ const RoomEnvironmentCard: React.FC<RoomEnvironmentCardProps> = ({
 
         <Grid item xs={6}>
           <MetricCard
-            label="Back Temperature"
+            label="อุณหภูมิด้านหลัง"
             value={backTemp}
             unit="°C"
             icon="🌡️"
@@ -873,15 +873,15 @@ const RoomEnvironmentCard: React.FC<RoomEnvironmentCardProps> = ({
             borderRadius={2}
           >
             <Opacity sx={{ color: '#3b82f6', fontSize: 20 }} />
-            <Typography variant="caption" fontWeight="bold" color="#3b82f6" textTransform="uppercase" letterSpacing={0.5}>
-              Humidity Monitoring
+            <Typography variant="caption" fontWeight="bold" color="#3b82f6" letterSpacing={0.5}>
+              ตรวจสอบความชื้น
             </Typography>
           </Box>
         </Grid>
 
         <Grid item xs={6}>
           <MetricCard
-            label="Front Humidity"
+            label="ความชื้นด้านหน้า"
             value={frontHumid}
             unit="%RH"
             icon="💧"
@@ -892,7 +892,7 @@ const RoomEnvironmentCard: React.FC<RoomEnvironmentCardProps> = ({
 
         <Grid item xs={6}>
           <MetricCard
-            label="Back Humidity"
+            label="ความชื้นด้านหลัง"
             value={backHumid}
             unit="%RH"
             icon="💧"
