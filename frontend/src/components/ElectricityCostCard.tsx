@@ -10,6 +10,7 @@ import {
   IconButton,
   Tooltip,
   useTheme,
+  Paper,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -69,18 +70,23 @@ const ElectricityCostCard: React.FC<ElectricityCostCardProps> = ({ dataCenterId,
   const accentColor = siteCode === 'DC' ? '#ffa726' : '#ab47bc';
 
   return (
-    <Card
+    <Paper
       elevation={0}
       sx={{
         background: isDark
-          ? `linear-gradient(135deg, ${alpha(accentColor, 0.15)} 0%, ${alpha('#000', 0.4)} 100%)`
-          : `linear-gradient(135deg, ${alpha(accentColor, 0.12)} 0%, ${alpha('#fff', 0.95)} 100%)`,
-        border: `1px solid ${alpha(accentColor, 0.3)}`,
-        borderRadius: 4,
+          ? `linear-gradient(135deg, ${alpha(accentColor, 0.15)} 0%, ${alpha('#000', 0.3)} 100%)`
+          : `linear-gradient(135deg, ${alpha(accentColor, 0.08)} 0%, ${alpha('#fff', 0.98)} 100%)`,
+        border: `1px solid ${alpha(accentColor, 0.2)}`,
+        borderRadius: 2.5,
         position: 'relative',
         overflow: 'hidden',
-        mt: 2,
-        mb: 2,
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          border: `1px solid ${alpha(accentColor, 0.4)}`,
+          boxShadow: isDark 
+            ? `0 8px 16px ${alpha(accentColor, 0.1)}` 
+            : `0 8px 16px ${alpha(accentColor, 0.12)}`,
+        },
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -88,31 +94,39 @@ const ElectricityCostCard: React.FC<ElectricityCostCardProps> = ({ dataCenterId,
           left: 0,
           right: 0,
           height: '3px',
-          background: `linear-gradient(90deg, ${accentColor} 0%, ${alpha(accentColor, 0.3)} 100%)`,
+          background: `linear-gradient(90deg, ${accentColor} 0%, ${alpha(accentColor, 0.2)} 100%)`,
         },
       }}
     >
-      <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-        {/* Header */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Box display="flex" alignItems="center" gap={1}>
+      <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
+        {/* Header - Compact */}
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5} gap={1}>
+          <Box display="flex" alignItems="center" gap={0.8} flex={1}>
             <Box
               sx={{
                 p: 0.8,
-                borderRadius: 2,
-                bgcolor: alpha(accentColor, 0.15),
+                borderRadius: 1.5,
+                background: `linear-gradient(135deg, ${alpha(accentColor, 0.15)} 0%, ${alpha(accentColor, 0.05)} 100%)`,
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              <ElectricBoltIcon sx={{ color: accentColor, fontSize: 22 }} />
+              <ElectricBoltIcon sx={{ color: accentColor, fontSize: 20 }} />
             </Box>
-            <Box>
-              <Typography variant="subtitle2" fontWeight={700} color="text.primary">
-                ค่าไฟฟ้าเดือนนี้
+            <Box minWidth={0}>
+              <Typography 
+                variant="subtitle2" 
+                fontWeight={700} 
+                color="text.primary"
+                noWrap
+                sx={{ fontSize: '0.9rem' }}
+              >
+                ค่าไฟฟ้า
               </Typography>
-              <Typography variant="caption" color="text.secondary" fontSize="0.65rem">
-                Electricity Cost
+              <Typography variant="caption" color="text.secondary" noWrap sx={{ fontSize: '0.65rem' }}>
+                เดือนนี้
               </Typography>
             </Box>
           </Box>
@@ -121,87 +135,234 @@ const ElectricityCostCard: React.FC<ElectricityCostCardProps> = ({ dataCenterId,
               size="small"
               onClick={loadCostSummary}
               disabled={loading}
-              sx={{ color: 'text.secondary' }}
+              sx={{ 
+                color: 'text.secondary',
+                '&:hover': { color: accentColor },
+                p: 0.5,
+              }}
             >
-              <RefreshIcon fontSize="small" />
+              <RefreshIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Tooltip>
         </Box>
 
         {error ? (
-          <Typography variant="caption" color="error">{error}</Typography>
+          <Box 
+            sx={{
+              p: 1,
+              borderRadius: 1,
+              background: alpha('#d32f2f', 0.08),
+              border: `1px solid ${alpha('#d32f2f', 0.2)}`,
+            }}
+          >
+            <Typography variant="caption" color="error" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
+              ⚠️ {error}
+            </Typography>
+          </Box>
         ) : loading ? (
           <Box>
-            <Skeleton variant="text" width="60%" height={36} />
-            <Skeleton variant="text" width="80%" height={20} sx={{ mt: 1 }} />
+            <Box display="flex" gap={1} mb={1}>
+              <Skeleton variant="text" width="40%" height={24} />
+              <Skeleton variant="text" width="40%" height={24} />
+            </Box>
+            <Box display="grid" gridTemplateColumns="1fr 1fr" gap={0.75}>
+              <Skeleton variant="rectangular" height={50} sx={{ borderRadius: 1 }} />
+              <Skeleton variant="rectangular" height={50} sx={{ borderRadius: 1 }} />
+            </Box>
           </Box>
         ) : summary ? (
           <Box>
-            {/* Main Cost */}
-            <Typography
-              variant="h4"
-              fontWeight={800}
-              sx={{
-                color: accentColor,
-                textShadow: isDark ? `0 0 20px ${alpha(accentColor, 0.3)}` : 'none',
-                mb: 0.5,
-                fontSize: { xs: '1.6rem', sm: '1.9rem' },
-              }}
-            >
-              ฿{summary.current_month_cost?.toLocaleString('th-TH', { maximumFractionDigits: 0 })}
-            </Typography>
+            {/* Main Values - 2 Columns */}
+            <Grid container spacing={1} mb={1.5}>
+              {/* Cost */}
+              <Grid item xs={6}>
+                <Box
+                  sx={{
+                    p: 1,
+                    borderRadius: 1.5,
+                    background: isDark 
+                      ? alpha(accentColor, 0.1)
+                      : alpha(accentColor, 0.06),
+                    border: `1px solid ${alpha(accentColor, 0.2)}`,
+                  }}
+                >
+                  <Typography 
+                    variant="caption" 
+                    color="text.secondary" 
+                    display="block"
+                    sx={{ fontSize: '0.65rem', fontWeight: 600, mb: 0.4 }}
+                  >
+                    💰 ค่าไฟรวม
+                  </Typography>
+                  <Box display="flex" alignItems="baseline" gap={0.3}>
+                    <Typography
+                      sx={{
+                        color: accentColor,
+                        fontWeight: 800,
+                        fontSize: { xs: '1.4rem', sm: '1.6rem' },
+                        lineHeight: 1,
+                        letterSpacing: '-0.5px',
+                      }}
+                    >
+                      ฿{summary.current_month_cost?.toLocaleString('th-TH', { maximumFractionDigits: 0 })}
+                    </Typography>
+                    <Typography 
+                      variant="caption" 
+                      color="text.secondary"
+                      sx={{ fontSize: '0.6rem', fontWeight: 600 }}
+                    >
+                      บาท
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
 
-            {/* Energy */}
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              พลังงาน: {summary.current_month_energy_kwh?.toLocaleString('th-TH', { maximumFractionDigits: 0 })} kWh
-            </Typography>
+              {/* Energy */}
+              <Grid item xs={6}>
+                <Box
+                  sx={{
+                    p: 1,
+                    borderRadius: 1.5,
+                    background: isDark 
+                      ? alpha(accentColor, 0.1)
+                      : alpha(accentColor, 0.06),
+                    border: `1px solid ${alpha(accentColor, 0.2)}`,
+                  }}
+                >
+                  <Typography 
+                    variant="caption" 
+                    color="text.secondary" 
+                    display="block"
+                    sx={{ fontSize: '0.65rem', fontWeight: 600, mb: 0.4 }}
+                  >
+                    ⚡ พลังงาน
+                  </Typography>
+                  <Box display="flex" alignItems="baseline" gap={0.3}>
+                    <Typography
+                      sx={{
+                        color: 'text.primary',
+                        fontWeight: 800,
+                        fontSize: { xs: '1.4rem', sm: '1.6rem' },
+                        lineHeight: 1,
+                        letterSpacing: '-0.5px',
+                      }}
+                    >
+                      {summary.current_month_energy_kwh?.toLocaleString('th-TH', { maximumFractionDigits: 0 })}
+                    </Typography>
+                    <Typography 
+                      variant="caption" 
+                      color="text.secondary"
+                      sx={{ fontSize: '0.6rem', fontWeight: 600 }}
+                    >
+                      kWh
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
 
-            {/* Stats Grid */}
+            {/* Stats Row - 3 Columns Compact */}
             <Box
               sx={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr 1fr',
-                gap: 1,
+                gap: 0.75,
                 pt: 1.5,
-                borderTop: `1px solid ${alpha(accentColor, 0.15)}`,
+                borderTop: `1px solid ${alpha(accentColor, 0.1)}`,
               }}
             >
               {/* Rate */}
-              <Box textAlign="center">
-                <Typography variant="caption" color="text.secondary" display="block" fontSize="0.65rem">
-                  อัตรา
+              <Box 
+                textAlign="center"
+                sx={{
+                  p: 0.75,
+                  borderRadius: 1,
+                  background: isDark 
+                    ? alpha(accentColor, 0.06)
+                    : alpha(accentColor, 0.04),
+                  border: `1px solid ${alpha(accentColor, 0.1)}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    background: alpha(accentColor, 0.08),
+                  }
+                }}
+              >
+                <Typography 
+                  variant="caption" 
+                  color="text.secondary" 
+                  display="block" 
+                  sx={{ fontSize: '0.6rem', fontWeight: 600, mb: 0.4 }}
+                >
+                  💳 อัตรา
                 </Typography>
-                <Typography variant="body2" fontWeight={700} color="text.primary">
+                <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, color: accentColor }}>
                   ฿{summary.current_rate?.toFixed(2)}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" fontSize="0.6rem">
-                  /kWh
                 </Typography>
               </Box>
 
               {/* Daily Avg */}
-              <Box textAlign="center">
-                <Typography variant="caption" color="text.secondary" display="block" fontSize="0.65rem">
-                  เฉลี่ย/วัน
+              <Box 
+                textAlign="center"
+                sx={{
+                  p: 0.75,
+                  borderRadius: 1,
+                  background: isDark 
+                    ? alpha(accentColor, 0.06)
+                    : alpha(accentColor, 0.04),
+                  border: `1px solid ${alpha(accentColor, 0.1)}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    background: alpha(accentColor, 0.08),
+                  }
+                }}
+              >
+                <Typography 
+                  variant="caption" 
+                  color="text.secondary" 
+                  display="block" 
+                  sx={{ fontSize: '0.6rem', fontWeight: 600, mb: 0.4 }}
+                >
+                  📊 เฉลี่ย/วัน
                 </Typography>
-                <Typography variant="body2" fontWeight={700} color="text.primary">
+                <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, color: 'text.primary' }}>
                   ฿{summary.average_daily_cost?.toLocaleString('th-TH', { maximumFractionDigits: 0 })}
                 </Typography>
               </Box>
 
-              {/* Month Change */}
-              <Box textAlign="center">
-                <Typography variant="caption" color="text.secondary" display="block" fontSize="0.65rem">
-                  เทียบ ด.ก่อน
+              {/* Change */}
+              <Box 
+                textAlign="center"
+                sx={{
+                  p: 0.75,
+                  borderRadius: 1,
+                  background: isDark 
+                    ? alpha(accentColor, 0.06)
+                    : alpha(accentColor, 0.04),
+                  border: `1px solid ${alpha(accentColor, 0.1)}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    background: alpha(accentColor, 0.08),
+                  }
+                }}
+              >
+                <Typography 
+                  variant="caption" 
+                  color="text.secondary" 
+                  display="block" 
+                  sx={{ fontSize: '0.6rem', fontWeight: 600, mb: 0.3 }}
+                >
+                  📈 เทียบ ด.ก่อน
                 </Typography>
                 <Box display="flex" alignItems="center" justifyContent="center" gap={0.3}>
-                  <Box sx={{ color: getCostChangeColor() }}>
+                  <Box sx={{ color: getCostChangeColor(), display: 'flex', fontSize: '0.8rem' }}>
                     {getCostChangeIcon()}
                   </Box>
                   <Typography
-                    variant="body2"
-                    fontWeight={700}
-                    sx={{ color: getCostChangeColor() }}
+                    sx={{ 
+                      color: getCostChangeColor(), 
+                      fontSize: '0.9rem',
+                      fontWeight: 800 
+                    }}
                   >
                     {summary.cost_change_percent !== null
                       ? `${summary.cost_change_percent > 0 ? '+' : ''}${summary.cost_change_percent?.toFixed(1)}%`
@@ -212,12 +373,24 @@ const ElectricityCostCard: React.FC<ElectricityCostCardProps> = ({ dataCenterId,
             </Box>
           </Box>
         ) : (
-          <Typography variant="body2" color="text.secondary">
-            ยังไม่มีข้อมูลค่าไฟฟ้า
-          </Typography>
+          <Box 
+            sx={{
+              p: 1,
+              textAlign: 'center',
+              borderRadius: 1,
+              background: isDark 
+                ? alpha('#000', 0.1)
+                : alpha('#f5f5f5', 0.3),
+              border: `1px dashed ${alpha(accentColor, 0.2)}`,
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
+              ยังไม่มีข้อมูล
+            </Typography>
+          </Box>
         )}
-      </CardContent>
-    </Card>
+      </Box>
+    </Paper>
   );
 };
 

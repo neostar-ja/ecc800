@@ -60,36 +60,107 @@ const fetchEquipment = async (siteCode: string) => {
   return apiGet(`/sites/${siteCode}/equipment`);
 };
 
+// Helper: Convert time range to date parameters
+const getDateRangeFromTimeRange = (timeRange: string): { dt_from: string; dt_to: string } => {
+  const now = new Date();
+  let startDate = new Date(now);
+  
+  switch (timeRange) {
+    case '1h':
+      startDate.setHours(startDate.getHours() - 1);
+      break;
+    case '4h':
+      startDate.setHours(startDate.getHours() - 4);
+      break;
+    case '24h':
+      startDate.setDate(startDate.getDate() - 1);
+      break;
+    case '3d':
+      startDate.setDate(startDate.getDate() - 3);
+      break;
+    case '7d':
+      startDate.setDate(startDate.getDate() - 7);
+      break;
+    case '30d':
+      startDate.setDate(startDate.getDate() - 30);
+      break;
+    default:
+      startDate.setDate(startDate.getDate() - 1); // Default to 24h
+  }
+  
+  return {
+    dt_from: startDate.toISOString().split('T')[0] + ' 00:00:00',
+    dt_to: now.toISOString().split('T')[0] + ' 23:59:59',
+  };
+};
+
 const fetchFaults = async (siteCode: string, equipmentId: string, timeRange: string, severity?: string) => {
-  if (!siteCode || !equipmentId) return [];
+  if (!siteCode || !equipmentId) return { data: [], meta: { total_count: 0 } };
+  
+  const dateRange = getDateRangeFromTimeRange(timeRange);
   
   const params: any = {
     site_code: siteCode,
     equipment_id: equipmentId,
-    time_range: timeRange,
+    ...dateRange,
   };
   
   if (severity && severity !== 'all') {
     params.severity = severity;
   }
   
-  return apiGet('/enhanced-faults', params);
+  try {
+    const result = await apiGet('/faults', params);
+    // Ensure we have the right structure
+    return {
+      data: result.data || result || [],
+      meta: result.meta || { total_count: 0 },
+    };
+  } catch (err) {
+    console.error('Error fetching faults:', err);
+    return { data: [], meta: { total_count: 0 } };
+  }
 };
 
 const fetchFaultsSummary = async (siteCode: string, equipmentId: string, timeRange: string) => {
   if (!siteCode || !equipmentId) return null;
   
-  const params = {
-    site_code: siteCode,
-    equipment_id: equipmentId,
-    time_range: timeRange,
-  };
-  
-  return apiGet('/enhanced-faults/summary', params);
+  try {
+    const faults = await fetchFaults(siteCode, equipmentId, timeRange);
+    const data = faults.data || [];
+    
+    // Calculate summary from fault data
+    const summary = {
+      total_faults: data.length,
+      affected_equipment: 1, // Since we're filtering by equipment_id
+      fault_types: new Set((data as any[]).map((f: any) => f.fault_type || f.metric_name)).size,
+      latest_fault: data.length > 0 ? data[0]?.timestamp : undefined,
+    };
+    
+    return summary;
+  } catch (err) {
+    console.error('Error fetching faults summary:', err);
+    return null;
+  }
 };
 
 const fetchTimeRanges = async () => {
-  return apiGet('/enhanced-faults/time-ranges');
+  return {
+    predefined: [
+      { value: '1h', label: '1 ชั่วโมงล่าสุด', description: 'Last 1 hour' },
+      { value: '4h', label: '4 ชั่วโมงล่าสุด', description: 'Last 4 hours' },
+      { value: '24h', label: '24 ชั่วโมงล่าสุด', description: 'Last 24 hours' },
+      { value: '3d', label: '3 วันล่าสุด', description: 'Last 3 days' },
+      { value: '7d', label: '7 วันล่าสุด', description: 'Last 7 days' },
+      { value: '30d', label: '30 วันล่าสุด', description: 'Last 30 days' },
+    ],
+    severities: [
+      { value: 'all', label: 'ทั้งหมด', color: '#666' },
+      { value: 'critical', label: 'วิกฤต', color: '#f44336' },
+      { value: 'warning', label: 'เตือน', color: '#ff9800' },
+      { value: 'info', label: 'ข้อมูล', color: '#2196f3' },
+    ],
+  };
 };
 
 // Type definitions
