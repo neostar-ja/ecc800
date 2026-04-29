@@ -3,19 +3,20 @@
 Create Test Users for Permission Testing
 สร้าง test users สำหรับทดสอบระบบสิทธิ์
 """
+import os
 import psycopg2
 from passlib.context import CryptContext
 
 # Password context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Database connection
+# Database connection - use environment variables with fallback
 conn = psycopg2.connect(
-    host='localhost',
-    port=5210,
-    database='ecc800',
-    user='apirak',
-    password='Kanokwan@1987#neostar'
+    host=os.getenv('POSTGRES_HOST', 'localhost'),
+    port=int(os.getenv('POSTGRES_PORT', '5432')),
+    database=os.getenv('POSTGRES_DB', 'ecc800'),
+    user=os.getenv('POSTGRES_USER', 'postgres'),
+    password=os.getenv('POSTGRES_PASSWORD', '')
 )
 cur = conn.cursor()
 

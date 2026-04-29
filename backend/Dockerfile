@@ -18,6 +18,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code
 COPY . .
 
+# Copy startup script with execute permissions
+COPY --chmod=755 startup.sh /app/startup.sh
+
 # สร้าง user ที่ไม่ใช่ root
 RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
@@ -30,5 +33,5 @@ EXPOSE 8010
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8010/ecc800/api/health || exit 1
 
-# Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8010"]
+# Command to run the application with startup script
+CMD ["/app/startup.sh"]

@@ -3,6 +3,15 @@
 echo "🧪 Enhanced Metrics System Test"
 echo "================================"
 
+# Load environment variables for testing
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# Use environment variables with fallback to test defaults
+TEST_USERNAME="${TEST_USERNAME:-${ADMIN_USERNAME:-admin}}"
+TEST_PASSWORD="${TEST_PASSWORD:-${ADMIN_PASSWORD:-Admin123!}}"
+
 # Test 1: Database Connection
 echo "📋 Test 1: Database Connection"
 docker exec -it ecc800-backend bash -c "cd /app && python -c \"
@@ -78,7 +87,7 @@ echo "Testing HTTP endpoints..."
 # Get auth token
 TOKEN=$(curl -s -X POST "http://localhost:8888/api/auth/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin&password=admin123" | \
+  -d "username=${TEST_USERNAME}&password=${TEST_PASSWORD}" | \
   python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])" 2>/dev/null || echo "")
 
 if [ -n "$TOKEN" ]; then

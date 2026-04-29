@@ -20,6 +20,10 @@ from app.api.routes.analytics import router as analytics_router
 from app.api.routes.metrics import router as metrics_router
 from app.api.routes.users import router as users_router
 
+# Import Data Routers (Timeseries, Faults)
+from app.routers.data import router as data_router
+from app.routers.timeseries import router as timeseries_router
+
 # Import Enhanced Metrics Routers
 from app.routers.enhanced_metrics import router as enhanced_metrics_router
 from app.routers.enhanced_faults import router as enhanced_faults_router
@@ -27,6 +31,7 @@ from app.routers.simple_enhanced_metrics import router as simple_enhanced_metric
 from app.routers.dashboard import router as dashboard_router
 from app.routers.dashboard_realtime import router as dashboard_realtime_router
 from app.routers.sensors import router as sensors_router
+from app.routers.electricity_cost import router as electricity_cost_router
 
 # Import Role-based Access Control and Keycloak routers
 from app.api.routes.roles import router as roles_router
@@ -104,6 +109,12 @@ print(f"✅ Analytics router registered with {len(analytics_router.routes)} rout
 app.include_router(metrics_router, prefix=settings.API_PREFIX)
 print(f"✅ Metrics router registered with {len(metrics_router.routes)} routes")
 
+# Include Data Routers (Timeseries, Faults)
+app.include_router(data_router, prefix=settings.API_PREFIX, tags=["Data"])
+print(f"✅ Data router registered with {len(data_router.routes)} routes")
+app.include_router(timeseries_router, prefix=settings.API_PREFIX, tags=["Timeseries"])
+print(f"✅ Timeseries router registered with {len(timeseries_router.routes)} routes")
+
 # Include Enhanced Metrics Routers
 app.include_router(simple_enhanced_metrics_router, prefix=settings.API_PREFIX, tags=["Simple Enhanced Metrics"])
 print(f"✅ Simple Enhanced Metrics router registered with {len(simple_enhanced_metrics_router.routes)} routes")
@@ -142,6 +153,10 @@ print(f"✅ Keycloak SSO router registered with {len(keycloak_router.routes)} ro
 # Include Pipeline router
 app.include_router(pipeline_router, prefix=f"{settings.API_PREFIX}/pipeline", tags=["Pipeline"])
 print(f"✅ Pipeline router registered with {len(pipeline_router.routes)} routes")
+
+# Include Electricity Cost router
+app.include_router(electricity_cost_router, prefix=settings.API_PREFIX, tags=["Electricity Cost"])
+print(f"✅ Electricity Cost router registered with {len(electricity_cost_router.routes)} routes")
 
 print(f"✅ All routers registered successfully")
 print(f"✅ Total API routes registered: {len(app.routes)}")

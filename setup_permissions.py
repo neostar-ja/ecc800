@@ -3,16 +3,17 @@
 Setup Menu Items and Permissions Script
 กำหนดเมนูและสิทธิ์ตามที่ต้องการ
 """
+import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# Database connection
+# Database connection - use environment variables with fallback
 conn = psycopg2.connect(
-    host='localhost',
-    port=5210,
-    database='ecc800',
-    user='apirak',
-    password='Kanokwan@1987#neostar'
+    host=os.getenv('POSTGRES_HOST', 'localhost'),
+    port=int(os.getenv('POSTGRES_PORT', '5432')),
+    database=os.getenv('POSTGRES_DB', 'ecc800'),
+    user=os.getenv('POSTGRES_USER', 'postgres'),
+    password=os.getenv('POSTGRES_PASSWORD', '')
 )
 cur = conn.cursor(cursor_factory=RealDictCursor)
 

@@ -270,5 +270,84 @@ class DashboardTemplate(Base):
     data_center = relationship("DataCenter")
 
 
+class ElectricityRate(Base):
+    """ค่า tariff ไฟฟ้า (Baht/kWh) สำหรับแต่ละ Data Center"""
+    __tablename__ = "electricity_rates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    data_center_id = Column(Integer, ForeignKey("data_centers.id"), nullable=False, index=True)
+    site_code = Column(String(10), nullable=False, index=True)  # DC, DR
+    
+    # Rate information
+    rate_value = Column(Numeric(10, 4), nullable=False)  # Baht per kWh, e.g., 5.1234
+    rate_unit = Column(String(20), default="Baht/kWh", nullable=False)  # Unit of rate
+    description = Column(Text)  # คำอธิบาย เช่น "ค่าไฟเบิกจ่าย 2026"
+    
+    # Effective period
+    effective_from = Column(DateTime(timezone=True), nullable=False)  # วันที่เริ่มใช้
+    effective_to = Column(DateTime(timezone=True), nullable=True)  # วันที่สิ้นสุด (NULL = ยังใช้ได้)
+    is_active = Column(Boolean, default=True, index=True)
+    
+    # Metadata
+    created_by = Column(String(50))
+    updated_by = Column(String(50))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    data_center = relationship("DataCenter", backref="electricity_rates")
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_electricity_rate_dc_active', 'data_center_id', 'is_active'),
+        Index('idx_electricity_rate_effective', 'effective_from', 'effective_to'),
+    )
+
+
+class ElectricityCost(Base):
+    """ค่าไฟฟ้า คำนวณโดย Energy × Rate สำหรับแต่ละ Data Center ต่อเดือน"""
+    __tablename__ = "electricity_costs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    data_center_id = Column(Integer, ForeignKey("data_centers.id"), nullable=False, index=True)
+    site_code = Column(String(10), nullable=False, index=True)  # DC, DR
+    
+    # Period information
+    year = Column(Integer, nullable=False, index=True)  # ปี (e.g., 2026)
+    month = Column(Integer, nullable=False, index=True)  # เดือน (1-12)
+    month_start = Column(DateTime(timezone=True), nullable=False)  # วันที่เริ่มต้นของเดือน
+    month_end = Column(DateTime(timezone=True), nullable=False)  # วันที่สิ้นสุดของเดือน
+    
+    # Energy and cost calculation
+    total_energy_kwh = Column(Numeric(15, 2), nullable=False, default=0)  # kWh ที่ใช้ในเดือน
+    average_rate = Column(Numeric(10, 4), nullable=False, default=0)  # Baht/kWh เฉลี่ยในเดือน
+    total_cost_baht = Column(Numeric(15, 2), nullable=False, default=0)  # รวม Baht (Energy × Rate)
+    
+    # Additional metrics
+    days_in_period = Column(Integer, default=0)  # จำนวนวันที่มีข้อมูล
+    avg_daily_energy_kwh = Column(Numeric(12, 2), nullable=False, default=0)  # เฉลี่ยต่อวัน
+    peak_hour_energy_kwh = Column(Numeric(12, 2), nullable=False, default=0)  # สูงสุดต่อชั่วโมง
+    
+    # Status
+    is_finalized = Column(Boolean, default=False)  # ยืนยันแล้ว (ไม่สามารถแก้ไข)
+    calculation_method = Column(String(50), default="automatic")  # automatic, manual
+    
+    # Metadata
+    created_by = Column(String(50))
+    updated_by = Column(String(50))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    data_center = relationship("DataCenter", backref="electricity_costs")
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_electricity_cost_dc_month', 'data_center_id', 'year', 'month', unique=True),
+        Index('idx_electricity_cost_period', 'month_start', 'month_end'),
+        Index('idx_electricity_cost_finalized', 'is_finalized'),
+    )
+
+
 # Performance Data และ Fault Data เป็น reflection จาก TimescaleDB hypertables
 # เนื่องจากเป็นตารางที่มีอยู่แล้วและมี time-series partitioning

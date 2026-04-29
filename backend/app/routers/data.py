@@ -30,6 +30,9 @@ async def list_sites(session: AsyncSession = Depends(get_db_session)):
     List all sites/data centers - รายการไซต์/ศูนย์ข้อมูลทั้งหมด
     """
     try:
+        # Ensure transaction is clean before discovery
+        await session.rollback()
+        
         disc = await Discovery.load(session)
         
         # Try data centers table first - ลองตาราง data centers ก่อน
@@ -70,6 +73,9 @@ async def list_equipment(
     List equipment for a site - รายการอุปกรณ์ของไซต์
     """
     try:
+        # Ensure transaction is clean before discovery
+        await session.rollback()
+        
         disc = await Discovery.load(session)
         
         # Try equipment display view first - ลองวิวแสดงชื่ออุปกรณ์ก่อน
@@ -125,6 +131,9 @@ async def list_metrics(
     List available metrics - รายการเมทริกส์ที่มี
     """
     try:
+        # Ensure transaction is clean before discovery
+        await session.rollback()
+        
         disc = await Discovery.load(session)
         p = disc.perf
         
@@ -169,6 +178,9 @@ async def get_timeseries(
     Get time series data - รับข้อมูลเวลา
     """
     try:
+        # Ensure transaction is clean before discovery
+        await session.rollback()
+        
         disc = await Discovery.load(session)
         return await fetch_timeseries(
             session, disc, site_code, equipment_id, metric, 
@@ -191,12 +203,28 @@ async def get_faults(
     Get fault data - รับข้อมูลความผิดพลาด
     """
     try:
+        # Ensure transaction is clean before discovery
+        try:
+            await session.rollback()
+        except:
+            pass
+        
+        # Commit any pending transaction to reset state
+        try:
+            await session.commit()
+        except:
+            pass
+        
         disc = await Discovery.load(session)
         return await fetch_faults(
             session, disc, site_code, equipment_id, 
             dt_from, dt_to, severity, interval
         )
     except Exception as e:
+        # Log the full error for debugging
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"ERROR in get_faults: {error_trace}")
         raise HTTPException(status_code=500, detail=f"Error fetching faults: {str(e)}")
 
 @router.get("/reports/kpi")
@@ -210,6 +238,9 @@ async def get_kpi_report(
     Get KPI report data - รับข้อมูลรายงาน KPI
     """
     try:
+        # Ensure transaction is clean before discovery
+        await session.rollback()
+        
         disc = await Discovery.load(session)
         
         # Default to last 24 hours if no date range - เริ่มต้น 24 ชั่วโมงล่าสุดถ้าไม่มีช่วงเวลา
@@ -393,6 +424,9 @@ async def get_discovery_info(session: AsyncSession = Depends(get_db_session)):
     Get database discovery information - รับข้อมูลการค้นหาฐานข้อมูล
     """
     try:
+        # Ensure transaction is clean before discovery
+        await session.rollback()
+        
         disc = await Discovery.load(session)
         
         return {

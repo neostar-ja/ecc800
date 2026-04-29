@@ -51,6 +51,7 @@ import {
   ComposedChart,
   Bar
 } from 'recharts';
+import ElectricityCostCard from '../components/ElectricityCostCard';
 
 // ============ ANIMATIONS ============
 const pulse = keyframes`
@@ -2109,6 +2110,13 @@ const NewDashboardPage: React.FC = () => {
               </Box>
             </Box>
           </Paper>
+          
+          {/* ELECTRICITY COST CARD */}
+          <ElectricityCostCard
+            dataCenterId={siteLabel === 'DC' ? 1 : 2}
+            dataCenterName={siteLabel === 'DC' ? 'WU_Hospital_DC_room' : 'WU_Hospital_DR_Room'}
+            siteCode={siteLabel}
+          />
           
           {/* ENHANCED PUE CARD WITH GAUGE + CHART */}
           <EnhancedPUECard 

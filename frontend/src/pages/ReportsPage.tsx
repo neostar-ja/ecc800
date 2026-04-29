@@ -89,6 +89,8 @@ const glassCard = {
   boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
 };
 
+import ElectricityCostReport from '../components/ElectricityCostReport';
+
 const gradientHeader = {
   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   WebkitBackgroundClip: 'text',
@@ -1349,6 +1351,8 @@ const CoolingSystemReport: React.FC<{ siteCode: string; hours: number }> = ({ si
   );
 };
 
+
+
 // UPS Report (Enhanced)
 const UPSReport: React.FC<{ siteCode: string; hours: number }> = ({ siteCode, hours }) => {
   const [data, setData] = useState<any>(null);
@@ -1387,6 +1391,15 @@ const UPSReport: React.FC<{ siteCode: string; hours: number }> = ({ siteCode, ho
 
   return (
     <Grid container spacing={3}>
+      {/* Electricity Cost Section - at the top of UPS tab */}
+      <Grid item xs={12}>
+        <ElectricityCostReport siteCode={siteCode} />
+      </Grid>
+
+      <Grid item xs={12}>
+        <Divider sx={{ my: 2 }} />
+      </Grid>
+
       <Grid item xs={12}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
           🔋 เครื่องสำรองไฟ (UPS Cabinet) - {siteCode.toUpperCase()}

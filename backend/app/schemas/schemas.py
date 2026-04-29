@@ -274,5 +274,100 @@ class EquipmentNameOverrideResponse(BaseSchema):
     updated_at: Optional[datetime]
 
 
+# Electricity rate and cost schemas
+class ElectricityRateCreate(BaseModel):
+    """สร้างอัตราค่าไฟฟ้า"""
+    data_center_id: int
+    site_code: str = Field(..., min_length=1, max_length=10)
+    rate_value: Decimal = Field(..., gt=0, decimal_places=4)  # Baht/kWh
+    description: Optional[str] = None
+    effective_from: datetime
+    effective_to: Optional[datetime] = None
+
+
+class ElectricityRateUpdate(BaseModel):
+    """อัปเดตอัตราค่าไฟฟ้า"""
+    rate_value: Optional[Decimal] = Field(None, gt=0, decimal_places=4)
+    description: Optional[str] = None
+    effective_from: Optional[datetime] = None
+    effective_to: Optional[datetime] = None
+    is_active: Optional[bool] = None
+
+
+class ElectricityRateResponse(BaseSchema):
+    """ข้อมูลอัตราค่าไฟฟ้า"""
+    id: int
+    data_center_id: int
+    site_code: str
+    rate_value: Decimal
+    rate_unit: str
+    description: Optional[str]
+    effective_from: datetime
+    effective_to: Optional[datetime]
+    is_active: bool
+    created_by: Optional[str]
+    updated_by: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+class ElectricityCostCreate(BaseModel):
+    """สร้างบันทึกค่าไฟฟ้า"""
+    data_center_id: int
+    site_code: str
+    year: int
+    month: int
+    total_energy_kwh: Decimal = Field(..., ge=0)
+    average_rate: Decimal = Field(..., gt=0)
+    total_cost_baht: Decimal = Field(..., ge=0)
+    days_in_period: Optional[int] = None
+    calculation_method: str = "automatic"
+
+
+class ElectricityCostUpdate(BaseModel):
+    """อัปเดตบันทึกค่าไฟฟ้า"""
+    total_energy_kwh: Optional[Decimal] = Field(None, ge=0)
+    average_rate: Optional[Decimal] = Field(None, gt=0)
+    total_cost_baht: Optional[Decimal] = Field(None, ge=0)
+    days_in_period: Optional[int] = None
+    is_finalized: Optional[bool] = None
+
+
+class ElectricityCostResponse(BaseSchema):
+    """ข้อมูลค่าไฟฟ้า"""
+    id: int
+    data_center_id: int
+    site_code: str
+    year: int
+    month: int
+    month_start: datetime
+    month_end: datetime
+    total_energy_kwh: Decimal
+    average_rate: Decimal
+    total_cost_baht: Decimal
+    days_in_period: int
+    avg_daily_energy_kwh: Decimal
+    peak_hour_energy_kwh: Decimal
+    is_finalized: bool
+    calculation_method: str
+    created_by: Optional[str]
+    updated_by: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+class ElectricityCostSummary(BaseModel):
+    """สรุปค่าไฟฟ้า"""
+    site_code: str
+    data_center_name: str
+    current_month_cost: Decimal
+    current_month_energy_kwh: Decimal
+    previous_month_cost: Optional[Decimal]
+    previous_month_energy_kwh: Optional[Decimal]
+    cost_change_percent: Optional[float]  # % เปลี่ยนแปลง
+    current_rate: Decimal
+    average_daily_cost: Decimal
+
+
 # Update forward references
 LoginResponse.update_forward_refs()

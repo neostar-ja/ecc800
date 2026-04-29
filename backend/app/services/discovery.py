@@ -78,8 +78,17 @@ class Discovery:
               AND table_type='BASE TABLE'
             ORDER BY 1,2
         """)
-        rs = await session.execute(q)
-        return [(r[0], r[1]) for r in rs]
+        try:
+            rs = await session.execute(q)
+            return [(r[0], r[1]) for r in rs]
+        except Exception as e:
+            # If query fails, try to rollback and retry
+            try:
+                await session.rollback()
+                rs = await session.execute(q)
+                return [(r[0], r[1]) for r in rs]
+            except Exception:
+                return []
 
     @staticmethod
     async def _list_columns(session: AsyncSession, schema: str, table: str) -> List[Tuple[str, str]]:
@@ -90,8 +99,18 @@ class Discovery:
             WHERE table_schema=:s AND table_name=:t
             ORDER BY ordinal_position
         """)
-        rs = await session.execute(q, {"s": schema, "t": table})
-        return [(r[0], r[1]) for r in rs]
+        try:
+            rs = await session.execute(q, {"s": schema, "t": table})
+            return [(r[0], r[1]) for r in rs]
+        except Exception as e:
+            # If query fails, try to rollback and retry
+            try:
+                await session.rollback()
+                rs = await session.execute(q, {"s": schema, "t": table})
+                return [(r[0], r[1]) for r in rs]
+            except Exception:
+                # Return empty list if still fails
+                return []
 
     @staticmethod
     async def _list_hypertables(session: AsyncSession) -> List[str]:
@@ -148,7 +167,11 @@ class Discovery:
             if cand: 
                 perf_table = ".".join(cand)
         if not fault_table:
-            candf = find_table(r"(fault).*data|^fault_performance_data$")
+            # Prefer fault_performance_data specifically
+            candf = find_table(r"^.*\.fault_performance_data$|^fault_performance_data$")
+            if not candf:
+                # Fall back to any fault.*data pattern
+                candf = find_table(r"(fault).*data")
             if candf: 
                 fault_table = ".".join(candf)
         if not equip_table:

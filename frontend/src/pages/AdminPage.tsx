@@ -84,6 +84,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, apiPut, apiDelete } from '../lib/api';
 import UnifiedAdminManagement from '../components/UnifiedAdminManagement';
 import TimeSeriesChart from '../components/TimeSeriesChart';
+import ElectricityRateManagement from '../components/ElectricityRateManagement';
 
 // Add custom CSS animations
 const styles = `
@@ -1660,6 +1661,11 @@ const AdminPage: React.FC = () => {
                   </CardContent>
                 </Card>
               </Zoom>
+
+              {/* Electricity Rate Management Section */}
+              <Box sx={{ mt: 4 }}>
+                <ElectricityRateManagement />
+              </Box>
             </Box>
           </Container>
         </Fade>

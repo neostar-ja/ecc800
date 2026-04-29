@@ -113,6 +113,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { apiGet } from '../lib/api';
+import ElectricityCostReport from '../components/ElectricityCostReport';
 import {
   ResponsiveContainer,
   LineChart,
@@ -5642,6 +5643,11 @@ const UPSSection: React.FC<{ siteCode: string; hours: number }> = ({ siteCode, h
               </Box>
             </Box>
           </Box>
+        </Grid>
+
+        {/* 💰 Electricity Cost Report */}
+        <Grid item xs={12}>
+          <ElectricityCostReport siteCode={siteCode} />
         </Grid>
 
         {/* Overview Mode - Key Metrics */}

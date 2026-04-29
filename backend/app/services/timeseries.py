@@ -43,6 +43,11 @@ async def fetch_timeseries(
         dt_from = dt_from.replace(tzinfo=timezone.utc)
     if dt_to.tzinfo is None:    
         dt_to = dt_to.replace(tzinfo=timezone.utc)
+    
+    # Convert to naive UTC for database comparison (since columns are stored as timestamp without timezone)
+    dt_from = dt_from.astimezone(timezone.utc).replace(tzinfo=None)
+    dt_to = dt_to.astimezone(timezone.utc).replace(tzinfo=None)
+    
     if interval is None:        
         interval = choose_interval(dt_from, dt_to)
 
@@ -180,6 +185,11 @@ async def fetch_faults(
         dt_from = dt_from.replace(tzinfo=timezone.utc)
     if dt_to.tzinfo is None:    
         dt_to = dt_to.replace(tzinfo=timezone.utc)
+    
+    # Convert to naive UTC for database comparison (since columns are stored as timestamp without timezone)
+    dt_from = dt_from.astimezone(timezone.utc).replace(tzinfo=None)
+    dt_to = dt_to.astimezone(timezone.utc).replace(tzinfo=None)
+    
     if interval is None:        
         interval = choose_interval(dt_from, dt_to)
 

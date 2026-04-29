@@ -1,37 +1,8 @@
-# Frontend Dockerfile สำหรับ ECC800
-# Build stage
-FROM node:18-alpine AS build
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files
-COPY package.json package-lock.json* ./
-
-    # Install dependencies
-    RUN npm install
-    
-    # Copy source code
-    COPY . .
-
-# Build arguments
-ARG VITE_API_BASE=/ecc800/api
-ARG VITE_BASE_URL=/ecc800
-ARG VITE_API_BASE_URL=/ecc800/api
-
-# Set environment variables for build
-ENV VITE_API_BASE=$VITE_API_BASE
-ENV VITE_BASE_URL=$VITE_BASE_URL
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-
-# Build the application
-RUN npm run build
-
 # Production stage
 FROM nginx:1.25-alpine
 
-# Copy built files to nginx
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copy locally built files to nginx
+COPY dist /usr/share/nginx/html
 
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
@@ -56,6 +27,7 @@ RUN echo 'server {' > /etc/nginx/conf.d/default.conf && \
     echo '    ' >> /etc/nginx/conf.d/default.conf && \
     echo '    # Handle all other requests (SPA routing)' >> /etc/nginx/conf.d/default.conf && \
     echo '    location / {' >> /etc/nginx/conf.d/default.conf && \
+    echo '        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";' >> /etc/nginx/conf.d/default.conf && \
     echo '        try_files $uri $uri/ /index.html;' >> /etc/nginx/conf.d/default.conf && \
     echo '    }' >> /etc/nginx/conf.d/default.conf && \
     echo '}' >> /etc/nginx/conf.d/default.conf
